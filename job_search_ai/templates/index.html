@@ -101,37 +101,40 @@
                     <pre class="text-xs leading-4 font-mono">
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        AI Job Search System                         │
-└─────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
+└───────────────────────────────────┬─────────────────────────────────┘
+                                    │
+                                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         CrewAI Agents                               │
 ├─────────────────┬─────────────────┬────────────────┬───────────────┤
 │  Search Agent   │  Filter Agent   │ Analysis Agent │ Profile Agent │
-│    (Indeed,     │  (Matching &    │  (Skills &     │   (Resume    │
-│   LinkedIn)     │   Filtering)    │ Requirements)  │  Analysis)    │
-└─────────┬───────┴────────┬────────┴────────┬───────┴───────┬───────┘
-          │                │                 │               │
-          ▼                ▼                 ▼               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                         LangChain Framework                         │
-├─────────────────┬─────────────────┬────────────────┬───────────────┤
-│   Web Scraping  │    LLM Tools    │  Text Analysis │  Embeddings   │
+│   (Job Data     │  (Profile       │  (Job Req.     │   (Profile   │
+│   Collection)   │   Matching)     │   Analysis)    │   Analysis)   │
 └─────────┬───────┴────────┬────────┴────────┬───────┴───────┬───────┘
           │                │                 │               │
           ▼                ▼                 ▼               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        External Services                            │
 ├─────────────────┬─────────────────┬────────────────┬───────────────┤
-│  Job Platforms  │   OpenAI API    │  Web Services  │  Databases    │
+│   Adzuna API    │   OpenAI API    │  Web Services  │ Local Cache   │
 └─────────────────┴─────────────────┴────────────────┴───────────────┘</pre>
                 </div>
                 <div class="mt-4 text-sm text-gray-600">
                     <h3 class="font-semibold mb-2">Key Components:</h3>
                     <ul class="list-disc list-inside space-y-1">
-                        <li><span class="font-medium">CrewAI Agents:</span> Specialized AI agents that handle different aspects of the job search process</li>
-                        <li><span class="font-medium">LangChain Framework:</span> Provides tools for language model integration and processing</li>
-                        <li><span class="font-medium">External Services:</span> Integration with job platforms and AI services</li>
+                        <li><span class="font-medium">CrewAI Agents:</span> Autonomous AI agents handling different aspects of job search</li>
+                        <li><span class="font-medium">Search Agent:</span> Collects job data from Adzuna API</li>
+                        <li><span class="font-medium">Filter Agent:</span> Matches jobs against profile using OpenAI</li>
+                        <li><span class="font-medium">Analysis Agent:</span> Analyzes job requirements and skills</li>
+                        <li><span class="font-medium">Profile Agent:</span> Processes CV and professional data</li>
+                        <li><span class="font-medium">External Services:</span> 
+                            <ul class="list-disc list-inside ml-4">
+                                <li>Adzuna API for job data</li>
+                                <li>OpenAI API for intelligent analysis</li>
+                                <li>Web Services for additional data</li>
+                                <li>Local Cache for performance</li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
             </div>

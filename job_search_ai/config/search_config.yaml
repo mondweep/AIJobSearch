@@ -64,3 +64,13 @@ filters:
       - technology
       - programme
       - director
+
+# Profile Paths
+profile_paths:
+  cv_template: 'tests/data/Mondweep Chakravorty_CVDetails.pdf'
+  cv_long: 'tests/data/Mondweep ChakravortyMaster_CV_LongVersion.pdf'
+  cv_more: 'tests/data/Mondweep ChakravortyCV_MoreDetails.docx.pdf'
+  skills: 'tests/data/LinkedIn Skills.pdf'
+  linkedin_posts: 'tests/data/LinkedIn Posts.pdf'
+  linkedin_exp: 'tests/data/LinkedInExperience _ Mondweep Chakravorty _ LinkedIn (1).pdf'
+  medium_profile: 'tests/data/medium/'

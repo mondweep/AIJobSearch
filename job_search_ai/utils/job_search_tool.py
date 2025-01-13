@@ -41,7 +41,7 @@ class JobSearchTool(BaseTool):
         return "URL not available"
 
     async def _async_run(self, criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Async implementation of job search"""
+        """Async implementation of job search with retry logic"""
         try:
             # Extract search parameters
             search_params = criteria.get('description', {})
@@ -54,24 +54,35 @@ class JobSearchTool(BaseTool):
                 return []
 
             all_jobs = []
-            # Search for each position
+            # Search for each position with retry logic
             for position in positions:
-                try:
-                    jobs = await self.adzuna_service.search_jobs(
-                        keywords=[position],
-                        locations=search_params.get('locations', []),
-                        min_salary=search_params.get('minimum_salary')
-                    )
+                max_retries = 3
+                backoff_time = 2
+                
+                for attempt in range(max_retries):
+                    try:
+                        jobs = await self.adzuna_service.search_jobs(
+                            keywords=[position],
+                            locations=search_params.get('locations', []),
+                            min_salary=search_params.get('minimum_salary')
+                        )
 
-                    # Process URLs
-                    for job in jobs:
-                        job['url'] = self._format_job_url(job)
-                    
-                    all_jobs.extend(jobs)
-                    print(f"Found {len(jobs)} jobs for position: {position}")
-                except Exception as e:
-                    print(f"Error searching for position {position}: {str(e)}")
-                    continue
+                        # Process URLs
+                        for job in jobs:
+                            job['url'] = self._format_job_url(job)
+                        
+                        all_jobs.extend(jobs)
+                        print(f"Found {len(jobs)} jobs for position: {position}")
+                        break  # Success, exit retry loop
+                        
+                    except Exception as e:
+                        print(f"Attempt {attempt + 1} failed for position {position}: {str(e)}")
+                        if attempt < max_retries - 1:  # Don't sleep on last attempt
+                            wait_time = backoff_time ** attempt
+                            print(f"Waiting {wait_time} seconds before retry...")
+                            await asyncio.sleep(wait_time)
+                        else:
+                            print(f"All retries failed for position {position}")
             
             print(f"Total jobs found across all positions: {len(all_jobs)}")
             return all_jobs

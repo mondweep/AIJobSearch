@@ -6,21 +6,27 @@ An intelligent job search system that uses AI agents to find, filter, and analyz
 
 job_search_ai/
 ├── services/
-│ ├── init.py
-│ ├── adzuna_service.py # Handles Adzuna API integration
-│ └── jobserve_service.py # (Future) JobServe API integration
+│   ├── __init__.py
+│   ├── adzuna_service.py
+│   └── jobserve_service.py
 ├── utils/
-│ ├── init.py
-│ ├── job_filter.py # Job filtering utilities
-│ └── job_summary.py # Job analysis and reporting
+│   ├── __init__.py
+│   ├── job_filter.py
+│   ├── job_summary.py
+│   ├── config_loader.py
+│   ├── profile_parser.py
+│   ├── job_matcher.py
+│   └── profile_analyzer.py    # Add it here
 ├── agents/
-│ ├── init.py
-│ ├── job_search_agent.py # AI agent for job searching
-│ ├── job_filter_agent.py # AI agent for filtering results
-│ └── job_analyst_agent.py # AI agent for market analysis
-├── job_search_crew.py # Orchestrates AI agents
-├── main.py # Main application entry point
-└── test_env.py # Environment setup verification
+│   ├── __init__.py
+│   ├── job_search_agent.py
+│   ├── job_filter_agent.py
+│   └── job_analyst_agent.py
+├── config/
+│   └── search_config.yaml
+├── job_search_crew.py
+├── main.py
+└── test_env.py
 
 ## Features
 - Automated job search using the Adzuna API

@@ -11,7 +11,6 @@ class ConfigLoader:
             config = yaml.safe_load(file)
             
         return config
-
     @staticmethod
     def get_search_criteria():
         """Get search criteria from config"""
@@ -23,3 +22,4 @@ class ConfigLoader:
         """Get filter configurations from config"""
         config = ConfigLoader.load_config()
         return config['filters']
+

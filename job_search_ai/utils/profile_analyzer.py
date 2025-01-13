@@ -1,67 +1,212 @@
 from collections import Counter
 import re
 from pathlib import Path
+import traceback
 
 class ProfileAnalyzer:
-    def __init__(self, profile_parser):
-        self.parser = profile_parser
+    def __init__(self, profile_data):
+        """
+        profile_data contains parsed data from multiple sources:
+        - cv: Basic CV data
+        - cv_long: Detailed CV information
+        - skills: LinkedIn skills
+        - linkedin_posts: LinkedIn content/articles
+        - linkedin_exp: LinkedIn experience
+        - medium: Medium profile articles/expertise
+        """
+        self.profile_data = profile_data
         self.analysis = {}
 
     def analyze_profile(self):
         """Perform comprehensive profile analysis"""
-        self.analysis = {
-            'core_competencies': self._analyze_core_competencies(),
-            'experience_level': self._analyze_experience_level(),
-            'leadership_indicators': self._analyze_leadership(),
-            'technical_depth': self._analyze_technical_depth(),
-            'industry_focus': self._analyze_industry_focus(),
-            'career_progression': self._analyze_career_progression(),
-            'skill_gaps': self._identify_skill_gaps()
-        }
-        return self.analysis
+        try:
+            print("\nStarting profile analysis...")
+            
+            # Debug input data
+            print(f"\nInput profile_data keys: {self.profile_data.keys()}")
+            
+            self.analysis = {}
+            
+            # Core competencies analysis
+            print("\nAnalyzing core competencies...")
+            self.analysis['core_competencies'] = self._analyze_core_competencies()
+            print(f"Core competencies result: {self.analysis['core_competencies']}")
+            
+            # Experience level analysis
+            print("\nAnalyzing experience level...")
+            self.analysis['experience_level'] = self._analyze_experience_level()
+            print(f"Experience level result: {self.analysis['experience_level']}")
+            
+            # Leadership analysis
+            print("\nAnalyzing leadership indicators...")
+            self.analysis['leadership_indicators'] = self._analyze_leadership()
+            print(f"Leadership indicators result: {self.analysis['leadership_indicators']}")
+            
+            # Technical depth analysis
+            print("\nAnalyzing technical depth...")
+            self.analysis['technical_depth'] = self._analyze_technical_depth()
+            print(f"Technical depth result: {self.analysis['technical_depth']}")
+            
+            # Industry focus analysis
+            print("\nAnalyzing industry focus...")
+            self.analysis['industry_focus'] = self._analyze_industry_focus()
+            print(f"Industry focus result: {self.analysis['industry_focus']}")
+            
+            # Career progression analysis
+            print("\nAnalyzing career progression...")
+            self.analysis['career_progression'] = self._analyze_career_progression()
+            print(f"Career progression result: {self.analysis['career_progression']}")
+            
+            # Skill gaps analysis
+            print("\nAnalyzing skill gaps...")
+            self.analysis['skill_gaps'] = self._identify_skill_gaps()
+            print(f"Skill gaps result: {self.analysis['skill_gaps']}")
+            
+            print("\nProfile analysis completed successfully")
+            return self.analysis
+            
+        except Exception as e:
+            print(f"\nError in profile analysis: {str(e)}")
+            print(f"Exception type: {type(e)}")
+            print(f"Traceback:\n{traceback.format_exc()}")
+            
+            # Return partial analysis if available
+            if hasattr(self, 'analysis') and self.analysis:
+                print(f"\nReturning partial analysis: {list(self.analysis.keys())}")
+                return self.analysis
+            
+            # Return empty analysis if nothing available
+            print("\nReturning empty analysis due to error")
+            return {
+                'core_competencies': {'primary_skills': [], 'skill_frequency': {}},
+                'experience_level': None,
+                'leadership_indicators': {},
+                'technical_depth': {},
+                'industry_focus': {},
+                'career_progression': {},
+                'skill_gaps': {}
+            }
 
     def _analyze_core_competencies(self):
-        """Analyze main areas of expertise"""
-        skills_data = self.parser.parse_skills()
-        cv_data = self.parser.parse_cv()
-        
+        """Analyze main areas of expertise with safe handling of None values"""
+        # Initialize empty list for all skills
         all_skills = []
-        if skills_data:
-            all_skills.extend(skills_data.get('technical', []))
-            all_skills.extend(skills_data.get('soft', []))
-        if cv_data:
-            all_skills.extend(cv_data.get('skills', []))
         
-        # Count skill frequencies
-        skill_counter = Counter(all_skills)
-        
-        return {
-            'primary_skills': [skill for skill, count in skill_counter.most_common(5)],
-            'skill_frequency': dict(skill_counter)
-        }
+        try:
+            # Safely get data from each source with detailed error handling
+            cv_data = self.profile_data.get('cv') or {}
+            cv_long_data = self.profile_data.get('cv_long') or {}
+            skills_data = self.profile_data.get('skills') or {}
+            linkedin_data = self.profile_data.get('linkedin') or {}
+            medium_data = self.profile_data.get('medium') or {}
+            
+            # CV data handling
+            if isinstance(cv_data, dict):
+                all_skills.extend(cv_data.get('skills', []))
+                print(f"Debug: Added {len(cv_data.get('skills', []))} skills from CV")
+            
+            # Skills section handling
+            if isinstance(skills_data, dict):
+                technical_skills = skills_data.get('technical', [])
+                soft_skills = skills_data.get('soft', [])
+                all_skills.extend(technical_skills)
+                all_skills.extend(soft_skills)
+                print(f"Debug: Added {len(technical_skills)} technical and {len(soft_skills)} soft skills")
+            
+            # LinkedIn data handling
+            if isinstance(linkedin_data, dict):
+                # Experience skills
+                linkedin_exp = linkedin_data.get('experience', {})
+                exp_skills = linkedin_exp.get('skills', [])
+                all_skills.extend(exp_skills)
+                print(f"Debug: Added {len(exp_skills)} skills from LinkedIn experience")
+                
+                # Post topics and expertise
+                linkedin_posts = linkedin_data.get('posts', {})
+                post_topics = linkedin_posts.get('topics', [])
+                post_expertise = linkedin_posts.get('expertise_areas', [])
+                all_skills.extend(post_topics)
+                all_skills.extend(post_expertise)
+                print(f"Debug: Added {len(post_topics)} topics and {len(post_expertise)} expertise areas from LinkedIn posts")
+            
+            # Medium data handling
+            if isinstance(medium_data, dict):
+                medium_topics = medium_data.get('topics', [])
+                medium_expertise = medium_data.get('expertise', [])
+                all_skills.extend(medium_topics)
+                all_skills.extend(medium_expertise)
+                print(f"Debug: Added {len(medium_topics)} topics and {len(medium_expertise)} expertise areas from Medium")
+            
+            # Count skill frequencies with detailed logging
+            skill_counter = Counter(all_skills)
+            print(f"Debug: Total unique skills found: {len(skill_counter)}")
+            
+            return {
+                'primary_skills': [skill for skill, count in skill_counter.most_common(10)],
+                'skill_frequency': dict(skill_counter),
+                'source_distribution': {
+                    'cv': len(cv_data.get('skills', [])),
+                    'technical_skills': len(skills_data.get('technical', [])),
+                    'soft_skills': len(skills_data.get('soft', [])),
+                    'linkedin': len(linkedin_exp.get('skills', [])) if isinstance(linkedin_data, dict) else 0,
+                    'medium': len(medium_topics) + len(medium_expertise) if isinstance(medium_data, dict) else 0
+                }
+            }
+            
+        except Exception as e:
+            print(f"Error in core competencies analysis: {str(e)}")
+            print(f"Debug: Exception type: {type(e)}")
+            print(f"Debug: Exception traceback: {traceback.format_exc()}")
+            return {
+                'primary_skills': [],
+                'skill_frequency': {},
+                'source_distribution': {}
+            }
 
     def _analyze_experience_level(self):
-        """Analyze years of experience and seniority"""
-        linkedin_data = self.parser.parse_linkedin_experience()
-        if not linkedin_data:
-            return {}
+        """Enhanced experience analysis using multiple sources"""
+        linkedin_data = self.profile_data.get('linkedin_exp', {})
+        cv_data = self.profile_data.get('cv', {})
+        cv_long_data = self.profile_data.get('cv_long', {})
         
-        roles = linkedin_data.get('roles', [])
-        leadership_roles = sum(1 for role in roles if any(
-            title in role.lower() for title in 
-            ['head', 'director', 'lead', 'manager', 'chief']
-        ))
+        # Combine roles from all sources
+        all_roles = []
+        all_roles.extend(linkedin_data.get('roles', []))
+        all_roles.extend(cv_data.get('experiences', []))
+        all_roles.extend(cv_long_data.get('experiences', []))
+        
+        # Identify leadership roles
+        leadership_roles = [
+            role for role in all_roles 
+            if any(title in role.lower() for title in 
+                ['head', 'director', 'lead', 'manager', 'chief'])
+        ]
         
         return {
             'leadership_roles': leadership_roles,
-            'total_roles': len(roles),
-            'seniority_level': self._determine_seniority(roles)
+            'total_roles': len(set(all_roles)),
+            'seniority_level': self._determine_seniority(all_roles),
+            'companies': linkedin_data.get('companies', [])
+        }
+
+    def _analyze_content_expertise(self):
+        """New method to analyze thought leadership content"""
+        linkedin_posts = self.profile_data.get('linkedin_posts', {})
+        medium_data = self.profile_data.get('medium', {})
+        
+        return {
+            'linkedin_topics': linkedin_posts.get('topics', []),
+            'medium_expertise': medium_data.get('expertise', []),
+            'thought_leadership_areas': list(set(
+                linkedin_posts.get('topics', []) + 
+                medium_data.get('expertise', [])
+            ))
         }
 
     def _analyze_leadership(self):
         """Analyze leadership experience and capabilities"""
-        cv_data = self.parser.parse_cv()
-        linkedin_data = self.parser.parse_linkedin_experience()
+        cv_data = self.profile_data.get('cv', {})
+        linkedin_data = self.profile_data.get('linkedin', {})
         
         leadership_indicators = {
             'team_size_managed': self._extract_team_size(cv_data),
@@ -80,7 +225,7 @@ class ProfileAnalyzer:
 
     def _analyze_technical_depth(self):
         """Analyze technical expertise level"""
-        skills_data = self.parser.parse_skills()
+        skills_data = self.profile_data.get('skills', {})
         if not skills_data:
             return {}
         
@@ -94,8 +239,8 @@ class ProfileAnalyzer:
 
     def _analyze_industry_focus(self):
         """Analyze industry experience and focus areas"""
-        linkedin_data = self.parser.parse_linkedin_experience()
-        cv_data = self.parser.parse_cv()
+        linkedin_data = self.profile_data.get('linkedin', {})
+        cv_data = self.profile_data.get('cv', {})
         
         industries = set()
         if linkedin_data and 'companies' in linkedin_data:
@@ -109,7 +254,7 @@ class ProfileAnalyzer:
 
     def _analyze_career_progression(self):
         """Analyze career growth and progression"""
-        linkedin_data = self.parser.parse_linkedin_experience()
+        linkedin_data = self.profile_data.get('linkedin', {})
         if not linkedin_data:
             return {}
         
