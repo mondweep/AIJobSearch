@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .cv-container { max-width: 800px; margin: auto; font-family: Arial; }
+        .header { margin-bottom: 20px; }
+        .name { font-size: 18px; margin-bottom: 5px; }
+        .contact { margin-bottom: 15px; }
+        .section { margin: 20px 0; }
+        .section-title { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .executive-summary { margin: 15px 0; line-height: 1.4; }
+        .career-highlights { margin: 15px 0; }
+        .highlight-item { margin: 8px 0; }
+        .experience-block {
+            margin: 15px 0;
+            padding: 10px 0;
+        }
+        .employer-header {
+            margin-bottom: 10px;
+        }
+        .job-title {
+            font-weight: bold;
+        }
+        .dates {
+            color: #666;
+        }
+        .context {
+            margin: 10px 0;
+            font-style: italic;
+        }
+        .objectives {
+            margin: 10px 0;
+        }
+        .results {
+            margin: 10px 0;
+        }
+        .bullet-point {
+            margin: 5px 0 5px 20px;
+        }
+        .education-cert {
+            margin: 15px 0;
+        }
+        .cert-category {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cv-container">
+        <div class="header">
+            <div class="name">{name} {education_short}</div>
+            <div class="contact">Mob: {phone}</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Executive Summary</div>
+            <div class="executive-summary">{executive_summary}</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Career Highlights</div>
+            <div class="career-highlights">
+                {career_highlights}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Career History</div>
+            {career_history}
+        </div>
+
+        <div class="section">
+            <div class="section-title">Education</div>
+            <div class="education-cert">
+                {education}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Professional Certifications</div>
+            <div class="education-cert">
+                {certifications}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Additional Information</div>
+            <div class="additional-info">
+                {additional_info}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Testimonials</div>
+            <div class="testimonials">
+                {testimonials}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Contact Me</div>
+            <div class="contact-info">
+                {contact_info}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

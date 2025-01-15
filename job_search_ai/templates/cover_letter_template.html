@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .letter-container { 
+            max-width: 800px; 
+            margin: auto; 
+            font-family: Arial; 
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .date { 
+            margin-bottom: 20px; 
+        }
+        .greeting { 
+            margin-bottom: 20px; 
+        }
+        .letter-body { 
+            margin: 30px 0; 
+        }
+        .paragraph {
+            margin: 15px 0;
+        }
+        .bullet-point {
+            margin: 10px 0 10px 20px;
+        }
+        .signature { 
+            margin-top: 30px; 
+            line-height: 1.4;
+        }
+        .contact-info {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="letter-container">
+        <div class="date">{date}</div>
+        
+        <div class="greeting">
+            {greeting}
+        </div>
+
+        <div class="letter-body">
+            <div class="paragraph">{opening}</div>
+            
+            <div class="paragraph">{background}</div>
+            
+            {requirements_experience}
+            
+            <div class="paragraph">{alignment}</div>
+            
+            <div class="paragraph">{closing}</div>
+        </div>
+
+        <div class="signature">
+            Sincerely,
+            <div class="contact-info">
+                {name}<br>
+                {phone}<br>
+                {email}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

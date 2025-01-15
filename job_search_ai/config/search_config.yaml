@@ -1,0 +1,80 @@
+# Job Search Configuration
+
+search_criteria:
+  positions:
+    - Head of Technology
+    #- Head of Cloud
+    #- Head of Cyber Security
+    #- AI Program Manager
+    #- CISO
+    #- Cloud Architecture Director
+    #- AI Director
+    #- Technology Programme Director
+    #- Head of AI
+    #- Head of Cyber Security
+    - Technical Program Manager
+    
+  locations:
+    - London
+    #- Manchester
+    #- Edinburgh
+    #- Kent
+  
+  salary:
+    min: 130000
+    currency: GBP
+  
+  contract_types:
+    - permanent
+    - contract
+
+# Filter Configurations
+filters:
+  - name: High Salary Technology Leadership
+    min_salary: 120000
+    keywords:
+      - head
+      - director
+      - technology
+      - cloud
+      - security
+      - operations
+      - strategy
+
+  - name: AI and Machine Learning Leadership
+    min_salary: 120000
+    keywords:
+      - ai
+      - artificial intelligence
+      - machine learning
+
+  - name: Cloud and Security Leadership
+    min_salary: 120000
+    keywords:
+      - cloud
+      - security
+      - cyber
+
+  - name: Contract Technology Leadership
+    min_salary: 800  # Daily rate
+    contract_type: contract
+    keywords:
+      - technology
+      - programme
+      - director
+
+# Profile Paths
+profile_paths:
+  cv_template: 'tests/data/Mondweep Chakravorty_CVDetails.pdf'
+  cv_long: 'tests/data/Mondweep ChakravortyMaster_CV_LongVersion.pdf'
+  #cv_more: 'tests/data/Mondweep ChakravortyCV_MoreDetails.docx.pdf'
+  skills: 'tests/data/linkedin/Skills.csv'
+  linkedin_posts: 'tests/data/linkedin/Shares.csv'
+  linkedin_exp: 'tests/data/LinkedInExperience _ Mondweep Chakravorty _ LinkedIn (1).pdf'
+  certification: 'tests/data/linkedin/Certifications.csv'
+  education: 'tests/data/linkedin/Education.csv'
+  endorsements: 'tests/data/linkedin/Endorsement_Received_Info.csv'
+  positions: 'tests/data/linkedin/Positions.csv'
+  linkedin_profile: 'tests/data/linkedin/Profile.csv'
+  linkedin_articles: 'tests/data/linkedin/articles/'
+  medium_profile: 'tests/data/medium/'

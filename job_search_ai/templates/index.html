@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Job Search Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .terminal-container {
+            height: 500px;
+            background-color: #1a1a1a;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .terminal {
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .job-results {
+            height: 500px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .loading {
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f3f4f6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            width: 0%;
+            height: 100%;
+            background-color: #3b82f6;
+            transition: width 0.5s ease;
+        }
+        
+        /* Preserve terminal content */
+        #terminalOutput {
+            overflow-anchor: none;
+        }
+        
+        #terminalAnchor {
+            overflow-anchor: auto;
+            height: 1px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Introduction -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h1 class="text-3xl font-bold mb-4">AI Job Search Assistant</h1>
+            <p class="text-gray-600 mb-4">
+                This tool uses AI to find and analyze job opportunities that match your profile. It:
+            </p>
+            <ul class="list-disc list-inside text-gray-600 mb-4">
+                <li>Searches multiple job platforms</li>
+                <li>Analyzes job requirements against your profile</li>
+                <li>Ranks positions by match quality</li>
+                <li>Provides detailed insights and recommendations</li>
+            </ul>
+            <div class="flex gap-4 mb-6">
+                <button id="startSearchButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Start Job Search
+                </button>
+                <button id="clearCacheButton" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Clear Cache
+                </button>
+            </div>
+            
+            <!-- Progress Section -->
+            <div id="progressSection" class="mt-4">
+                <div class="progress-bar">
+                    <div id="progress" class="progress"></div>
+                </div>
+                <p id="progressText" class="text-sm text-gray-600 mt-2">Processing search results...</p>
+                <p id="estimatedTime" class="text-sm text-gray-600">Estimated time: 3-5 minutes</p>
+            </div>
+        </div>
+
+        <!-- Architecture Overview -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">System Architecture</h2>
+                <button onclick="toggleArchitecture()" class="text-blue-500 hover:text-blue-700">
+                    Show/Hide Architecture
+                </button>
+            </div>
+            <div id="architectureSection" class="hidden">
+                <div class="bg-gray-50 p-4 rounded-lg overflow-x-auto">
+                    <pre class="text-xs leading-4 font-mono">
+┌─────────────────────────────────────────────────────────────────────┐
+│                        AI Job Search System                         │
+└───────────────────────────────────┬─────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         CrewAI Agents                               │
+├─────────────────┬─────────────────┬────────────────┬───────────────┤
+│  Search Agent   │  Filter Agent   │ Analysis Agent │ Profile Agent │
+│   (Job Data     │  (Profile       │  (Job Req.     │   (Profile   │
+│   Collection)   │   Matching)     │   Analysis)    │   Analysis)   │
+└─────────┬───────┴────────┬────────┴────────┬───────┴───────┬───────┘
+          │                │                 │               │
+          ▼                ▼                 ▼               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        External Services                            │
+├─────────────────┬─────────────────┬────────────────┬───────────────┤
+│   Adzuna API    │   OpenAI API    │  Web Services  │ Local Cache   │
+└─────────────────┴─────────────────┴────────────────┴───────────────┘</pre>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <h3 class="font-semibold mb-2">Key Components:</h3>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><span class="font-medium">CrewAI Agents:</span> Autonomous AI agents handling different aspects of job search</li>
+                        <li><span class="font-medium">Search Agent:</span> Collects job data from Adzuna API</li>
+                        <li><span class="font-medium">Filter Agent:</span> Matches jobs against profile using OpenAI</li>
+                        <li><span class="font-medium">Analysis Agent:</span> Analyzes job requirements and skills</li>
+                        <li><span class="font-medium">Profile Agent:</span> Processes CV and professional data</li>
+                        <li><span class="font-medium">External Services:</span> 
+                            <ul class="list-disc list-inside ml-4">
+                                <li>Adzuna API for job data</li>
+                                <li>OpenAI API for intelligent analysis</li>
+                                <li>Web Services for additional data</li>
+                                <li>Local Cache for performance</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Results Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Formatted Results -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Job Search Results</h2>
+                
+                <!-- Search Summary Panel -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-semibold mb-2">Search Summary</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Positions Searched:</p>
+                            <p id="searchedPositions" class="font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Locations:</p>
+                            <p id="searchedLocations" class="font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Minimum Salary:</p>
+                            <p id="minSalary" class="font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Contract Types:</p>
+                            <p id="contractTypes" class="font-medium"></p>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-blue-200">
+                        <p class="font-semibold">Total Jobs Found: <span id="totalJobs" class="text-blue-600">0</span></p>
+                        <p class="font-semibold">Matching Your Criteria: <span id="matchingJobs" class="text-green-600">0</span></p>
+                    </div>
+                </div>
+
+                <div id="jobResults" class="job-results">
+                    <!-- Results will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Terminal Output -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Process Log</h2>
+                <div class="terminal-container">
+                    <div class="terminal">
+                        <div id="terminalOutput"></div>
+                        <div id="terminalAnchor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
+            
+            // Get button by ID
+            const searchButton = document.getElementById('startSearchButton');
+            const clearCacheButton = document.getElementById('clearCacheButton');
+            
+            if (searchButton) {
+                console.log('Search button found');
+                // Remove any existing listeners
+                const newSearchButton = searchButton.cloneNode(true);
+                searchButton.parentNode.replaceChild(newSearchButton, searchButton);
+                
+                // Add new listener with explicit error handling
+                newSearchButton.addEventListener('click', async function(e) {
+                    try {
+                        console.log('Search button clicked');
+                        e.preventDefault();
+                        
+                        // Make the initial POST request to start the search
+                        const startResponse = await fetch('/run-search', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        });
+                        
+                        if (!startResponse.ok) {
+                            throw new Error(`HTTP error! status: ${startResponse.status}`);
+                        }
+                        
+                        console.log('Search started, beginning polling...');
+                        
+                        // Start the polling process
+                        await startJobSearch();
+                        
+                    } catch (error) {
+                        console.error('Error in click handler:', error);
+                        updateProgress(100, 'Error starting search');
+                    }
+                });
+            } else {
+                console.error('Search button not found!');
+            }
+            
+            if (clearCacheButton) {
+                console.log('Clear cache button found');
+                clearCacheButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Clear cache clicked');
+                    clearCache();
+                });
+            }
+        });
+
+        // Update the startJobSearch function to focus on polling
+        async function startJobSearch() {
+            try {
+                // Reset UI
+                clearCache();
+                
+                // Initialize UI and show progress
+                initializeUI();
+                updateProgress(25, 'Starting job search...');
+                
+                console.log('Making API call to /run-search');
+                const response = await fetch('/run-search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                console.log('Search started successfully');
+                
+                // Accumulate all lines
+                let allLines = [];
+                let complete = false;
+                let retryCount = 0;
+                const MAX_RETRIES = 180; // 3 minutes maximum polling time
+                
+                while (!complete && retryCount < MAX_RETRIES) {
+                    updateProgress(50, 'Processing search results...');
+                    
+                    try {
+                        const outputResponse = await fetch('/get-output');
+                        if (!outputResponse.ok) {
+                            throw new Error(`HTTP error! status: ${outputResponse.status}`);
+                        }
+                        
+                        const data = await outputResponse.json();
+                        console.log('Received data:', data);
+                        
+                        if (data.lines && data.lines.length > 0) {
+                            // Append new lines to our accumulated lines
+                            allLines = allLines.concat(data.lines);
+                            
+                            // Update terminal with all lines
+                            const terminal = document.getElementById('terminalOutput');
+                            if (terminal) {
+                                terminal.textContent = allLines.join('\n');
+                                // Scroll terminal to bottom
+                                terminal.scrollTop = terminal.scrollHeight;
+                            }
+                            
+                            // Process all accumulated lines
+                            const results = parseJobResults(allLines.join('\n'));
+                            if (results.jobs.length > 0) {
+                                displayJobResults(results.jobs);
+                                updateSearchSummary(results.searchCriteria, results.jobs.length);
+                            }
+                        }
+                        
+                        complete = data.complete;
+                        
+                        if (!complete) {
+                            retryCount++;
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    } catch (error) {
+                        console.error('Error during polling:', error);
+                        retryCount++;
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+                
+                if (complete) {
+                    console.log('Search completed successfully');
+                    updateProgress(100, 'Search completed!');
+                } else {
+                    console.log('Search timed out');
+                    updateProgress(100, 'Search timed out');
+                }
+                
+                setTimeout(() => {
+                    const progressSection = document.getElementById('progressSection');
+                    if (progressSection) {
+                        progressSection.classList.add('hidden');
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Error during job search:', error);
+                updateProgress(100, 'Error during search');
+                const terminal = document.getElementById('terminalOutput');
+                if (terminal) {
+                    terminal.textContent = `Error: ${error.message}`;
+                }
+            }
+        }
+
+        function initializeUI() {
+            // Show progress section
+            const progressSection = document.getElementById('progressSection');
+            progressSection.style.display = 'block';
+            document.getElementById('progress').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Initializing search...';
+        }
+
+        function updateProgress(percent, statusText) {
+            const progressSection = document.getElementById('progressSection');
+            const progress = document.getElementById('progress');
+            const progressText = document.getElementById('progressText');
+            
+            // Ensure progress section is visible
+            progressSection.style.display = 'block';
+            progress.style.width = `${percent}%`;
+            progressText.textContent = statusText;
+        }
+
+        function parseJobResults(text) {
+            let jobs = [];
+            let searchCriteria = {
+                positions: new Set(),
+                locations: [],
+                minSalary: '',
+                contractTypes: []
+            };
+            
+            try {
+                const lines = text.split('\n');
+                let currentJob = null;
+                let inJobSection = false;
+                
+                for (const line of lines) {
+                    if (line.includes('Positions:')) {
+                        const posMatch = line.match(/\[(.*?)\]/);
+                        if (posMatch) {
+                            const positions = posMatch[1].split(',')
+                                .map(p => p.trim().replace(/['"]/g, ''));
+                            positions.forEach(p => searchCriteria.positions.add(p));
+                        }
+                    }
+                    if (line.includes('Locations:')) {
+                        const locMatch = line.match(/\[(.*?)\]/);
+                        if (locMatch) {
+                            searchCriteria.locations = locMatch[1].split(',')
+                                .map(l => l.trim().replace(/['"]/g, ''));
+                        }
+                    }
+                    if (line.includes('Minimum Salary:')) {
+                        const salaryMatch = line.match(/Minimum Salary:\s*([\d,]+)\s*GBP/);
+                        if (salaryMatch) {
+                            searchCriteria.minSalary = salaryMatch[1];
+                        }
+                    }
+                    if (line.includes('Contract Types:')) {
+                        const typeMatch = line.match(/\[(.*?)\]/);
+                        if (typeMatch) {
+                            searchCriteria.contractTypes = typeMatch[1].split(',')
+                                .map(t => t.trim().replace(/['"]/g, ''));
+                        }
+                    }
+                    
+                    // Start of job listings section
+                    if (line.includes('**1. Top Matching Positions:**')) {
+                        inJobSection = true;
+                        continue;
+                    }
+                    
+                    if (inJobSection) {
+                        // New job entry
+                        if (line.includes('- **') && line.includes('**  ')) {
+                            if (currentJob) {
+                                jobs.push(currentJob);
+                            }
+                            const titleMatch = line.match(/- \*\*(.*?)\*\*/);
+                            if (titleMatch) {
+                                currentJob = {
+                                    title: titleMatch[1].trim(),
+                                    company: '',
+                                    salary: '',
+                                    location: '',
+                                    contractType: '',
+                                    description: '',
+                                    matchScore: ''
+                                };
+                            }
+                        }
+                        // Match Score parsing
+                        else if (line.includes('**Match Score:**')) {
+                            const scoreMatch = line.match(/\*\*Match Score:\*\*(.*?)$/);
+                            if (scoreMatch) {
+                                currentJob.matchScore = scoreMatch[1].trim();
+                            }
+                        }
+                        // Alternative match score format
+                        else if (line.includes('Match Score:')) {
+                            const scoreMatch = line.match(/Match Score:\s*(High|Medium|Low)/i);
+                            if (scoreMatch) {
+                                currentJob.matchScore = scoreMatch[1].trim();
+                            }
+                        }
+                    }
+                }
+                
+                // Add the last job if exists
+                if (currentJob) {
+                    jobs.push(currentJob);
+                }
+                
+                // Remove duplicates and ensure match scores
+                jobs = jobs.filter((job, index, self) => 
+                    index === self.findIndex((j) => 
+                        j.title === job.title && j.company === job.company
+                    )
+                ).map(job => ({
+                    ...job,
+                    matchScore: job.matchScore || 
+                               (job.title.toLowerCase().includes('head') ? 'High' :
+                                job.title.toLowerCase().includes('director') ? 'Medium' : 'Low')
+                }));
+
+                // Update UI
+                updateSearchSummary(searchCriteria, jobs);
+                displayJobResults(jobs);
+                
+                // Update job counts
+                document.getElementById('totalJobs').textContent = jobs.length;
+                document.getElementById('matchingJobs').textContent = 
+                    jobs.filter(job => job.matchScore?.toLowerCase().includes('high')).length;
+                
+                return {
+                    searchCriteria,
+                    jobs
+                };
+                
+            } catch (error) {
+                console.error('Error parsing job results:', error);
+                return {
+                    searchCriteria,
+                    jobs: []
+                };
+            }
+        }
+
+        function updateSearchSummary(criteria, totalJobs) {
+            const positionsElement = document.getElementById('positionsSearched');
+            const locationsElement = document.getElementById('locations');
+            const salaryElement = document.getElementById('minSalary');
+            const contractTypesElement = document.getElementById('contractTypes');
+            const totalJobsElement = document.getElementById('totalJobs');
+            
+            if (positionsElement) {
+                positionsElement.textContent = Array.from(criteria.positions).join(', ') || 'Not specified';
+            }
+            if (locationsElement) {
+                locationsElement.textContent = criteria.locations.join(', ') || 'Not specified';
+            }
+            if (salaryElement) {
+                salaryElement.textContent = criteria.minSalary || 'Not specified';
+            }
+            if (contractTypesElement) {
+                contractTypesElement.textContent = criteria.contractTypes.join(', ') || 'Not specified';
+            }
+            if (totalJobsElement) {
+                totalJobsElement.textContent = totalJobs;
+            }
+        }
+
+        function displayJobResults(jobs) {
+            const resultsDiv = document.getElementById('jobResults');
+            
+            if (!jobs || jobs.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-gray-600">No jobs found matching your criteria.</p>';
+                return;
+            }
+            
+            const jobsHTML = jobs.map(job => `
+                <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+                    <h3 class="text-xl font-bold mb-2">${job.title || 'Untitled Position'}</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Company</p>
+                            <p class="font-medium">${job.company || 'Not specified'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Location</p>
+                            <p class="font-medium">${job.location || 'Not specified'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Salary</p>
+                            <p class="font-medium">${job.salary || 'Not specified'}</p>
+                        </div>
+                        ${job.description ? `
+                        <div class="col-span-2">
+                            <p class="text-sm text-gray-600">Description</p>
+                            <p class="font-medium">${job.description}</p>
+                        </div>` : ''}
+                    </div>
+                    <div class="mt-2">
+                        <span class="px-3 py-1 rounded-full text-sm font-medium
+                            ${job.matchScore?.toLowerCase().includes('high') ? 'bg-green-100 text-green-800' : 
+                            job.matchScore?.toLowerCase().includes('medium') ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-red-100 text-red-800'}">
+                            Match Score: ${job.matchScore || 'Not rated'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+            
+            resultsDiv.innerHTML = jobsHTML;
+        }
+
+        function toggleArchitecture() {
+            const section = document.getElementById('architectureSection');
+            section.classList.toggle('hidden');
+        }
+
+        function clearCache() {
+            // Clear search summary
+            document.getElementById('searchedPositions').textContent = 'Not specified';
+            document.getElementById('searchedLocations').textContent = 'Not specified';
+            document.getElementById('minSalary').textContent = 'Not specified';
+            document.getElementById('contractTypes').textContent = 'Not specified';
+            document.getElementById('totalJobs').textContent = '0';
+            document.getElementById('matchingJobs').textContent = '0';
+            
+            // Clear job results
+            document.getElementById('jobResults').innerHTML = '';
+            
+            // Clear terminal output
+            document.getElementById('terminalOutput').textContent = '';
+            
+            // Don't hide progress section, just reset it
+            const progressSection = document.getElementById('progressSection');
+            progressSection.style.display = 'block';
+            document.getElementById('progress').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Ready to start...';
+            
+            console.log('Cache cleared successfully');
+        }
+    </script>
+</body>
+</html>
