@@ -204,65 +204,49 @@ class ProfileParser:
             all_topics = set()
             
             print(f"Debug: Reading CSV from {self.linkedin_posts_path}")
-            df = pd.read_csv(self.linkedin_posts_path, encoding='utf-8')
-            
-            # Verify required columns
-            required_cols = ['Date', 'ShareCommentary']
-            if not all(col in df.columns for col in required_cols):
-                print(f"Error: Missing required columns. Found: {df.columns.tolist()}")
-                print(f"Required: {required_cols}")
-                return {'posts': [], 'topics': []}
-            
-            # Sort by date descending but process all posts
-            df['Date'] = pd.to_datetime(df['Date'])
-            df = df.sort_values('Date', ascending=False)
-            
-            print(f"Debug: Processing {len(df)} posts")
-            
-            for _, row in df.iterrows():
-                post_content = str(row['ShareCommentary']).strip()
-                if len(post_content) > 0:
-                    # Extract topics and themes
-                    post_topics = self._extract_topics(post_content)
-                    post_themes = self._extract_post_themes(post_content)
-                    
-                    # Store full post content but create a preview
-                    preview = post_content[:200] + '...' if len(post_content) > 200 else post_content
-                    
-                    posts.append({
-                        'date': row['Date'],
-                        'content': post_content,
-                        'preview': preview,
-                        'topics': post_topics,
-                        'themes': post_themes,
-                        'embedding': None  # Will be populated by create_embeddings
-                    })
-                    
-                    all_topics.update(post_topics)
+            with open(self.linkedin_posts_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                df = pd.DataFrame(list(reader))
+                
+                # Verify required columns
+                required_cols = ['Date', 'ShareCommentary']
+                if not all(col in df.columns for col in required_cols):
+                    print(f"Error: Missing required columns. Found: {df.columns.tolist()}")
+                    print(f"Required: {required_cols}")
+                    return {'posts': [], 'topics': []}
+                
+                # Sort by date descending but process all posts
+                df['Date'] = pd.to_datetime(df['Date'])
+                df = df.sort_values('Date', ascending=False)
+                
+                print(f"Debug: Processing {len(df)} posts")
+                
+                for _, row in df.iterrows():
+                    post_content = str(row['ShareCommentary']).strip()
+                    if len(post_content) > 0:
+                        # Extract topics and themes
+                        post_topics = self._extract_topics(post_content)
+                        post_themes = self._extract_post_themes(post_content)
+                        
+                        # Store full post content but create a preview
+                        preview = post_content[:200] + '...' if len(post_content) > 200 else post_content
+                        
+                        posts.append({
+                            'date': row['Date'],
+                            'content': post_content,
+                            'preview': preview,
+                            'topics': post_topics,
+                            'themes': post_themes,
+                            'embedding': None  # Will be populated by create_embeddings
+                        })
+                        
+                        all_topics.update(post_topics)
             
             # Create embeddings for all posts
             if len(posts) > 0:
                 self._create_embeddings(posts)
             
-            # Summarize results
-            topic_freq = {}
-            for post in posts:
-                for topic in post['topics']:
-                    topic_freq[topic] = topic_freq.get(topic, 0) + 1
-            
-            print(f"\nDebug: LinkedIn Posts Analysis:")
-            print(f"- Total posts processed: {len(posts)}")
-            print(f"- Unique topics found: {len(all_topics)}")
-            print("- Top topics by frequency:")
-            for topic, freq in sorted(topic_freq.items(), key=lambda x: x[1], reverse=True)[:10]:
-                print(f"  * {topic}: {freq} mentions")
-            
-            return {
-                'posts': posts,
-                'topics': list(all_topics),
-                'topic_frequency': topic_freq,
-                'total_posts': len(posts)
-            }
+            return {'posts': posts, 'topics': list(all_topics)}
             
         except Exception as e:
             print(f"Error parsing LinkedIn posts: {str(e)}")
@@ -392,32 +376,15 @@ class ProfileParser:
         
         try:
             endorsements = {}
-            
-            try:
-                f, encoding = self._read_csv_with_encoding(self.linkedin_endorsements_path)
-                print(f"\nDebug: Successfully opened endorsements CSV with {encoding} encoding")
-                
+            with open(self.linkedin_endorsements_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     skill = row.get('Skill Name', '').strip()
-                    endorser = row.get('Endorser', '').strip()
+                    endorser = row.get('Endorser First Name', '') + ' ' + row.get('Endorser Last Name', '')
                     if skill:
                         if skill not in endorsements:
-                            endorsements[skill] = {'count': 0, 'endorsers': set()}
-                        endorsements[skill]['count'] += 1
-                        if endorser:
-                            endorsements[skill]['endorsers'].add(endorser)
-                
-                f.close()
-                
-            except Exception as e:
-                print(f"Error reading endorsements CSV: {str(e)}")
-                traceback.print_exc()
-                return None
-            
-            # Convert sets to lists for JSON serialization
-            for skill in endorsements:
-                endorsements[skill]['endorsers'] = list(endorsements[skill]['endorsers'])
+                            endorsements[skill] = []
+                        endorsements[skill].append(endorser.strip())
             
             return endorsements
             
@@ -433,11 +400,7 @@ class ProfileParser:
         
         try:
             positions = []
-            
-            try:
-                f, encoding = self._read_csv_with_encoding(self.linkedin_positions_path)
-                print(f"\nDebug: Successfully opened positions CSV with {encoding} encoding")
-                
+            with open(self.linkedin_positions_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     position = {
@@ -454,13 +417,6 @@ class ProfileParser:
                     }
                     positions.append(position)
                     print(f"\nDebug: Parsed position: {position['title']} at {position['company']}")
-                
-                f.close()
-                
-            except Exception as e:
-                print(f"Error reading positions CSV: {str(e)}")
-                traceback.print_exc()
-                return None
             
             return {
                 'positions': positions,
@@ -474,30 +430,20 @@ class ProfileParser:
 
     def _read_csv_with_encoding(self, file_path):
         """Try different encodings to read CSV file"""
-        encodings = ['utf-8', 'utf-16', 'latin1', 'cp1252']
-        
+        encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
         for encoding in encodings:
             try:
-                with open(file_path, 'r', encoding=encoding) as f:
-                    # Try to read first line to verify encoding
-                    f.readline()
-                    # If successful, rewind and return file object
-                    f.seek(0)
-                    return f, encoding
+                return open(file_path, 'r', encoding=encoding), encoding
             except UnicodeDecodeError:
                 continue
-        
-        raise ValueError(f"Could not read file {file_path} with any of the attempted encodings: {encodings}")
+        raise ValueError(f"Could not read file with any encoding: {encodings}")
 
     def _parse_linkedin_experience_csv(self):
         """Parse LinkedIn experience from CSV format"""
         try:
             experiences = []
             
-            try:
-                f, encoding = self._read_csv_with_encoding(self.linkedin_exp_path)
-                print(f"\nDebug: Successfully opened experience CSV with {encoding} encoding")
-                
+            with open(self.linkedin_exp_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     experience = {
@@ -512,13 +458,6 @@ class ProfileParser:
                     }
                     experiences.append(experience)
                     print(f"Debug: Parsed experience: {experience['title']} at {experience['company']}")
-                
-                f.close()
-                
-            except Exception as e:
-                print(f"Error reading experience CSV: {str(e)}")
-                traceback.print_exc()
-                return None
             
             return experiences
             
@@ -616,79 +555,49 @@ class ProfileParser:
             all_topics = set()
             
             print(f"Debug: Reading CSV from {self.linkedin_posts_path}")
-            try:
-                f, encoding = self._read_csv_with_encoding(self.linkedin_posts_path)
-                df = pd.read_csv(f, encoding=encoding)
-                f.close()
-            except Exception as e:
-                print(f"Error reading posts CSV: {str(e)}")
-                return {'posts': [], 'topics': []}
-            
-            # Verify required columns
-            required_cols = ['Date', 'ShareCommentary']
-            if not all(col in df.columns for col in required_cols):
-                print(f"Error: Missing required columns. Found: {df.columns.tolist()}")
-                print(f"Required: {required_cols}")
-                return {'posts': [], 'topics': []}
-            
-            # Sort by date descending
-            df['Date'] = pd.to_datetime(df['Date'])
-            df = df.sort_values('Date', ascending=False)
-            
-            print(f"Debug: Processing {len(df)} total posts")
-            
-            # Process all posts but only create embeddings for top 20
-            for idx, row in df.iterrows():
-                post_content = str(row['ShareCommentary']).strip()
-                if len(post_content) > 0:
-                    # Extract topics and themes
-                    post_topics = self._extract_topics(post_content)
-                    post_themes = self._extract_post_themes(post_content)
-                    
-                    # Store full post content but create a preview
-                    preview = post_content[:200] + '...' if len(post_content) > 200 else post_content
-                    
-                    post = {
-                        'date': row['Date'],
-                        'content': post_content,
-                        'preview': preview,
-                        'topics': post_topics,
-                        'themes': post_themes,
-                        'embedding': None  # Will be populated for top 20 only
-                    }
-                    
-                    posts.append(post)
-                    all_topics.update(post_topics)
-            
-            # Create embeddings only for top 20 recent posts
-            if len(posts) > 0:
-                top_20_posts = posts[:20]
-                self._create_embeddings(top_20_posts)
-                print(f"\nDebug: Created embeddings for top {len(top_20_posts)} recent posts")
+            with open(self.linkedin_posts_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                df = pd.DataFrame(list(reader))
                 
-                # Update the posts list with the embedded top 20
-                posts[:20] = top_20_posts
-        
-            # Summarize results
-            topic_freq = {}
-            for post in posts:
-                for topic in post['topics']:
-                    topic_freq[topic] = topic_freq.get(topic, 0) + 1
-        
-            print(f"\nDebug: LinkedIn Posts Analysis:")
-            print(f"- Total posts processed: {len(posts)}")
-            print(f"- Posts with embeddings: {len([p for p in posts if p.get('embedding')])}")
-            print(f"- Unique topics found: {len(all_topics)}")
-            print("- Top topics by frequency:")
-            for topic, freq in sorted(topic_freq.items(), key=lambda x: x[1], reverse=True)[:10]:
-                print(f"  * {topic}: {freq} mentions")
-        
-            return {
-                'posts': posts,
-                'topics': list(all_topics),
-                'topic_frequency': topic_freq,
-                'total_posts': len(posts)
-            }
+                # Verify required columns
+                required_cols = ['Date', 'ShareCommentary']
+                if not all(col in df.columns for col in required_cols):
+                    print(f"Error: Missing required columns. Found: {df.columns.tolist()}")
+                    print(f"Required: {required_cols}")
+                    return {'posts': [], 'topics': []}
+                
+                # Sort by date descending but process all posts
+                df['Date'] = pd.to_datetime(df['Date'])
+                df = df.sort_values('Date', ascending=False)
+                
+                print(f"Debug: Processing {len(df)} posts")
+                
+                for _, row in df.iterrows():
+                    post_content = str(row['ShareCommentary']).strip()
+                    if len(post_content) > 0:
+                        # Extract topics and themes
+                        post_topics = self._extract_topics(post_content)
+                        post_themes = self._extract_post_themes(post_content)
+                        
+                        # Store full post content but create a preview
+                        preview = post_content[:200] + '...' if len(post_content) > 200 else post_content
+                        
+                        posts.append({
+                            'date': row['Date'],
+                            'content': post_content,
+                            'preview': preview,
+                            'topics': post_topics,
+                            'themes': post_themes,
+                            'embedding': None  # Will be populated by create_embeddings
+                        })
+                        
+                        all_topics.update(post_topics)
+            
+            # Create embeddings for all posts
+            if len(posts) > 0:
+                self._create_embeddings(posts)
+            
+            return {'posts': posts, 'topics': list(all_topics)}
             
         except Exception as e:
             print(f"Error parsing LinkedIn posts: {str(e)}")
@@ -869,36 +778,20 @@ class ProfileParser:
         
         try:
             certifications = []
-            
-            try:
-                f, encoding = self._read_csv_with_encoding(self.linkedin_certifications_path)
-                print(f"\nDebug: Successfully opened certifications CSV with {encoding} encoding")
-                
+            with open(self.linkedin_certifications_path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    cert = {
+                    certification = {
                         'name': row.get('Name', '').strip(),
                         'authority': row.get('Authority', '').strip(),
-                        'license_number': row.get('License Number', '').strip(),
-                        'time_period': row.get('Time Period', '').strip(),
-                        'url': row.get('URL', '').strip()
+                        'license': row.get('License Number', '').strip(),
+                        'url': row.get('URL', '').strip(),
+                        'issued': row.get('Started On', '').strip(),
+                        'expires': row.get('Finished On', '').strip()
                     }
-                    
-                    if cert['name']:  # Only add if we have a name
-                        certifications.append(cert)
-                        print(f"Debug: Parsed certification: {cert['name']} from {cert['authority']}")
-                
-                f.close()
-                
-            except Exception as e:
-                print(f"Error reading certifications CSV: {str(e)}")
-                traceback.print_exc()
-                return None
-                
-            return {
-                'certifications': certifications,
-                'total_certifications': len(certifications)
-            }
+                    certifications.append(certification)
+            
+            return certifications
             
         except Exception as e:
             print(f"Error parsing LinkedIn certifications: {str(e)}")

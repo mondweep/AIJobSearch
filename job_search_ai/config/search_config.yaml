@@ -70,7 +70,7 @@ profile_paths:
   #cv_more: 'tests/data/Mondweep ChakravortyCV_MoreDetails.docx.pdf'
   skills: 'tests/data/linkedin/Skills.csv'
   linkedin_posts: 'tests/data/linkedin/Shares.csv'
-  linkedin_exp: 'tests/data/LinkedInExperience _ Mondweep Chakravorty _ LinkedIn (1).pdf'
+  linkedin_exp: 'tests/data/Experience_Mondweep Chakravorty_LinkedIn.pdf'
   certification: 'tests/data/linkedin/Certifications.csv'
   education: 'tests/data/linkedin/Education.csv'
   endorsements: 'tests/data/linkedin/Endorsement_Received_Info.csv'
