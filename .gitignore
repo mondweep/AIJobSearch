@@ -1,0 +1,17 @@
+# Test data and outputs
+job_search_ai/tests/data/
+job_search_ai/tests/output/
+
+# Virtual Environment
+job_search_ai/venv/
+venv/
+.env
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

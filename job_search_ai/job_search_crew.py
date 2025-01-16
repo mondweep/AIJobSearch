@@ -41,47 +41,20 @@ class JobSearchCrew:
         # Initialize profile parser
         self.profile_parser = ProfileParser(**parser_args)
         
-        # Parse all profile data
-        print("\n1. Parsing Profile Data...")
-        cv_data = self.profile_parser.parse_cv()
-        skills_data = self.profile_parser.parse_skills()
+        # Parse all profile data with caching
+        print("\n1. Getting Profile Data...")
+        self.complete_profile_data = self.profile_parser.parse_profile_data()
         
-        # Replace the direct linkedin_experience call with complete linkedin_data parsing
-        print("\n=== Parsing LinkedIn Data ===")
-        linkedin_data = self.profile_parser.parse_linkedin_data()  # This will parse all LinkedIn components
-        
-        medium_data = self.profile_parser.parse_medium_profile()
-        
-        # Combine all profile data
-        print("\n2. Combining Profile Data...")
-        self.complete_profile_data = {
-            'cv': cv_data,
-            'skills': skills_data,
-            'linkedin': linkedin_data,  # This now contains all LinkedIn components
-            'medium': medium_data
-        }
-        
-        # Debug output for LinkedIn components
-        if linkedin_data:
-            print("\nLinkedIn Components Found:")
-            print(f"- Profile: {'Present' if linkedin_data.get('profile') else 'Missing'}")
-            print(f"- Experience: {len(linkedin_data.get('experience', []))} entries")
-            print(f"- Posts: {len(linkedin_data.get('posts', []))} entries")
-            print(f"- Articles: {len(linkedin_data.get('articles', []))} entries")
-            print(f"- Endorsements: {len(linkedin_data.get('endorsements', {}))} skills")
-            print(f"- Certifications: {len(linkedin_data.get('certifications', []))} entries")
-            print(f"- Education: {len(linkedin_data.get('education', []))} entries")
-        
-        print(f"Combined data keys: {self.complete_profile_data.keys()}")
+        print(f"Profile data keys: {self.complete_profile_data.keys() if self.complete_profile_data else 'None'}")
         
         # Initialize profile analyzer with combined data
-        print("\n3. Analyzing Profile...")
+        print("\n2. Analyzing Profile...")
         self.profile_analyzer = ProfileAnalyzer(self.complete_profile_data)
         self.profile_analysis = self.profile_analyzer.analyze_profile()
         print(f"Analysis result keys: {self.profile_analysis.keys() if self.profile_analysis else 'None'}")
         
         # Store the analyzed profile data
-        print("\n4. Storing Profile Data...")
+        print("\n3. Storing Profile Data...")
         self.profile_data = {
             'raw_data': self.complete_profile_data,
             'analysis': self.profile_analysis

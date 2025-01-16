@@ -39,7 +39,7 @@ function startJobSearch(event) {
     };
     
     // Start search
-    fetch('/api/search', {
+    fetch('/api/start-search', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -57,8 +57,17 @@ function startJobSearch(event) {
             showError(data.message);
             return;
         }
+        
+        // Store session ID in URL if not already there
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('session_id')) {
+            urlParams.set('session_id', data.session_id);
+            const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+            window.history.pushState({}, '', newUrl);
+        }
+        
         // Start polling for results
-        pollSearchStatus();
+        pollSearchStatus(data.session_id);
     })
     .catch(error => {
         showError('Error starting search: ' + error.message);
@@ -66,12 +75,24 @@ function startJobSearch(event) {
     });
 }
 
-function pollSearchStatus() {
+function pollSearchStatus(sessionId) {
     if (!searchInProgress) {
         return;
     }
     
-    fetch('/api/search-status')
+    if (!sessionId) {
+        // Try to get session ID from URL if not provided
+        const urlParams = new URLSearchParams(window.location.search);
+        sessionId = urlParams.get('session_id');
+    }
+    
+    if (!sessionId) {
+        showError('No session ID found');
+        searchInProgress = false;
+        return;
+    }
+    
+    fetch(`/api/search-status?session_id=${sessionId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -91,20 +112,17 @@ function pollSearchStatus() {
             document.getElementById('searchMessage').textContent = data.message || 'Searching...';
             
             if (data.status === 'complete') {
-                console.log('Search complete, results:', data.results);  // Debug log
-                if (data.results) {
-                    displayResults(data.results);
-                    document.getElementById('searchSpinner').style.display = 'none';
-                    searchInProgress = false;
-                    return;
-                }
+                console.log('Search complete, redirecting to results');
+                window.location.href = `/results?session_id=${sessionId}`;
+                searchInProgress = false;
+                return;
             }
             
             // Reset retry count on successful response
             retryCount = 0;
             
             // Continue polling if not complete
-            setTimeout(pollSearchStatus, 2000);
+            setTimeout(() => pollSearchStatus(sessionId), 2000);
         })
         .catch(error => {
             console.error('Error polling status:', error);  // Debug log
@@ -114,9 +132,35 @@ function pollSearchStatus() {
                 searchInProgress = false;
                 return;
             }
-            setTimeout(pollSearchStatus, 2000);
+            setTimeout(() => pollSearchStatus(sessionId), 2000);
         });
 }
+
+function showError(message) {
+    const spinner = document.getElementById('searchSpinner');
+    const messageDiv = document.getElementById('searchMessage');
+    
+    spinner.style.display = 'none';
+    messageDiv.textContent = message;
+    messageDiv.classList.add('error');
+    searchInProgress = false;
+}
+
+// Attach event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', startJobSearch);
+    }
+    
+    // Check if we need to start polling (e.g., page reload during search)
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    if (sessionId) {
+        searchInProgress = true;
+        pollSearchStatus(sessionId);
+    }
+});
 
 function displayResults(results) {
     const resultsDiv = document.getElementById('searchResults');
@@ -176,24 +220,6 @@ function formatMatchScore(score) {
     return (score * 100).toFixed(1);
 }
 
-function showError(message) {
-    const spinner = document.getElementById('searchSpinner');
-    const messageDiv = document.getElementById('searchMessage');
-    
-    spinner.style.display = 'none';
-    messageDiv.textContent = message;
-    messageDiv.classList.add('error');
-    searchInProgress = false;
-}
-
 function viewJobDetails(jobId) {
     window.location.href = `/job/${jobId}`;
 }
-
-// Attach event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    const searchForm = document.getElementById('searchForm');
-    if (searchForm) {
-        searchForm.addEventListener('submit', startJobSearch);
-    }
-});

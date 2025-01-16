@@ -16,8 +16,19 @@ class ProfileAnalyzer:
         - linkedin_exp: LinkedIn experience
         - medium: Medium profile articles/expertise
         """
-        self.profile_data = profile_data
+        self.profile_data = profile_data or {}
         self.analysis = {}
+
+    def _safe_get(self, data, *keys, default=None):
+        """Safely get nested dictionary values"""
+        current = data
+        for key in keys:
+            if not isinstance(current, dict):
+                return default
+            current = current.get(key, default)
+            if current is None:
+                return default
+        return current
 
     def analyze_profile(self):
         """Analyze the complete profile data"""
@@ -39,10 +50,10 @@ class ProfileAnalyzer:
         """Analyze core competencies with enhanced skill categorization"""
         try:
             # Get skills from all sources
-            cv_skills = set(self.profile_data.get('cv', {}).get('skills', []))
-            linkedin_skills = set(self._extract_linkedin_skills(self.profile_data.get('linkedin', {})))
-            technical_skills = set(self.profile_data.get('skills', {}).get('technical', []))
-            soft_skills = set(self.profile_data.get('skills', {}).get('soft', []))
+            cv_skills = set(self._safe_get(self.profile_data, 'cv', 'skills', default=[]))
+            linkedin_skills = set(self._extract_linkedin_skills(self._safe_get(self.profile_data, 'linkedin', default={})))
+            technical_skills = set(self._safe_get(self.profile_data, 'skills', 'technical', default=[]))
+            soft_skills = set(self._safe_get(self.profile_data, 'skills', 'soft', default=[]))
             
             # Combine all skills
             all_skills = cv_skills | linkedin_skills | technical_skills | soft_skills
@@ -51,8 +62,8 @@ class ProfileAnalyzer:
             skill_counter = Counter(all_skills)
             
             # Get topics from content
-            linkedin_topics = set(self.profile_data.get('linkedin_posts', {}).get('topics', []))
-            medium_topics = set(self._extract_medium_topics(self.profile_data.get('medium', {})))
+            linkedin_topics = set(self._safe_get(self.profile_data, 'linkedin_posts', 'topics', default=[]))
+            medium_topics = set(self._extract_medium_topics(self._safe_get(self.profile_data, 'medium', default={})))
             
             print(f"Debug: Found {len(cv_skills)} CV skills")
             print(f"Debug: Found {len(technical_skills)} technical skills")
@@ -83,15 +94,15 @@ class ProfileAnalyzer:
 
     def _analyze_experience_level(self):
         """Enhanced experience analysis using multiple sources"""
-        linkedin_data = self.profile_data.get('linkedin_exp', {})
-        cv_data = self.profile_data.get('cv', {})
-        cv_long_data = self.profile_data.get('cv_long', {})
+        linkedin_data = self._safe_get(self.profile_data, 'linkedin_exp', default={})
+        cv_data = self._safe_get(self.profile_data, 'cv', default={})
+        cv_long_data = self._safe_get(self.profile_data, 'cv_long', default={})
         
         # Combine roles from all sources
         all_roles = []
-        all_roles.extend(linkedin_data.get('roles', []))
-        all_roles.extend(cv_data.get('experiences', []))
-        all_roles.extend(cv_long_data.get('experiences', []))
+        all_roles.extend(self._safe_get(linkedin_data, 'roles', default=[]))
+        all_roles.extend(self._safe_get(cv_data, 'experiences', default=[]))
+        all_roles.extend(self._safe_get(cv_long_data, 'experiences', default=[]))
         
         # Identify leadership roles
         leadership_roles = [
@@ -104,32 +115,32 @@ class ProfileAnalyzer:
             'leadership_roles': leadership_roles,
             'total_roles': len(set(all_roles)),
             'seniority_level': self._determine_seniority(all_roles),
-            'companies': linkedin_data.get('companies', [])
+            'companies': self._safe_get(linkedin_data, 'companies', default=[])
         }
 
     def _analyze_content_expertise(self):
         """Analyze thought leadership content from both posts and articles"""
-        linkedin_posts = self.profile_data.get('linkedin_posts', {})
-        linkedin_articles = self.profile_data.get('linkedin_articles', {})
-        medium_data = self.profile_data.get('medium', {})
+        linkedin_posts = self._safe_get(self.profile_data, 'linkedin_posts', default={})
+        linkedin_articles = self._safe_get(self.profile_data, 'linkedin_articles', default={})
+        medium_data = self._safe_get(self.profile_data, 'medium', default={})
         
         # Combine topics from all sources
         all_topics = set()
-        all_topics.update(linkedin_posts.get('topics', []))
-        all_topics.update(linkedin_articles.get('topics', []))
-        all_topics.update(medium_data.get('topics', []))
+        all_topics.update(self._safe_get(linkedin_posts, 'topics', default=[]))
+        all_topics.update(self._safe_get(linkedin_articles, 'topics', default=[]))
+        all_topics.update(self._safe_get(medium_data, 'topics', default=[]))
         
         return {
-            'linkedin_post_topics': linkedin_posts.get('topics', []),
-            'linkedin_article_topics': linkedin_articles.get('topics', []),
-            'medium_expertise': medium_data.get('expertise', []),
+            'linkedin_post_topics': self._safe_get(linkedin_posts, 'topics', default=[]),
+            'linkedin_article_topics': self._safe_get(linkedin_articles, 'topics', default=[]),
+            'medium_expertise': self._safe_get(medium_data, 'expertise', default=[]),
             'thought_leadership_areas': list(all_topics)
         }
 
     def _analyze_leadership(self):
         """Analyze leadership experience and capabilities"""
-        cv_data = self.profile_data.get('cv', {})
-        linkedin_data = self.profile_data.get('linkedin', {})
+        cv_data = self._safe_get(self.profile_data, 'cv', default={})
+        linkedin_data = self._safe_get(self.profile_data, 'linkedin', default={})
         
         leadership_indicators = {
             'team_size_managed': self._extract_team_size(cv_data),
@@ -137,9 +148,10 @@ class ProfileAnalyzer:
             'key_achievements': self._extract_achievements(cv_data)
         }
         
-        if linkedin_data and 'roles' in linkedin_data:
+        roles = self._safe_get(linkedin_data, 'roles', default=[])
+        if roles:
             leadership_indicators['leadership_roles'] = [
-                role for role in linkedin_data['roles']
+                role for role in roles
                 if any(title in role.lower() for title in 
                     ['head', 'director', 'lead', 'manager', 'chief'])
             ]
@@ -148,11 +160,11 @@ class ProfileAnalyzer:
 
     def _analyze_technical_depth(self):
         """Analyze technical expertise level"""
-        skills_data = self.profile_data.get('skills', {})
+        skills_data = self._safe_get(self.profile_data, 'skills', default={})
         if not skills_data:
             return {}
         
-        technical_skills = skills_data.get('technical', [])
+        technical_skills = self._safe_get(skills_data, 'technical', default=[])
         
         return {
             'core_technologies': technical_skills[:5],
@@ -162,12 +174,12 @@ class ProfileAnalyzer:
 
     def _analyze_industry_focus(self):
         """Analyze industry experience and focus areas"""
-        linkedin_data = self.profile_data.get('linkedin', {})
-        cv_data = self.profile_data.get('cv', {})
+        linkedin_data = self._safe_get(self.profile_data, 'linkedin', default={})
+        cv_data = self._safe_get(self.profile_data, 'cv', default={})
         
         industries = set()
         if linkedin_data and 'companies' in linkedin_data:
-            for company in linkedin_data['companies']:
+            for company in self._safe_get(linkedin_data, 'companies', default=[]):
                 industries.update(self._extract_industries(company))
         
         return {
@@ -177,11 +189,11 @@ class ProfileAnalyzer:
 
     def _analyze_career_progression(self):
         """Analyze career growth and progression"""
-        linkedin_data = self.profile_data.get('linkedin', {})
+        linkedin_data = self._safe_get(self.profile_data, 'linkedin', default={})
         if not linkedin_data:
             return {}
         
-        roles = linkedin_data.get('roles', [])
+        roles = self._safe_get(linkedin_data, 'roles', default=[])
         progression = {
             'career_path': self._analyze_role_progression(roles),
             'role_duration': self._analyze_role_durations(roles),
@@ -194,11 +206,11 @@ class ProfileAnalyzer:
         """Analyze skill gaps based on profile data"""
         try:
             # Get all skills from different sources
-            skills_from_cv = self._extract_skills_from_cv(self.profile_data.get('cv', {}))
+            skills_from_cv = self._extract_skills_from_cv(self._safe_get(self.profile_data, 'cv', default={}))
             technical_skills = self._extract_technical_skills(self.profile_data)
             soft_skills = self._extract_soft_skills(self.profile_data)
-            linkedin_skills = self._extract_linkedin_skills(self.profile_data.get('linkedin', {}))
-            medium_skills = self._extract_medium_topics(self.profile_data.get('medium', {}))
+            linkedin_skills = self._extract_linkedin_skills(self._safe_get(self.profile_data, 'linkedin', default={}))
+            medium_skills = self._extract_medium_topics(self._safe_get(self.profile_data, 'medium', default={}))
             
             # Debug logging
             print(f"Debug: Added {len(skills_from_cv)} skills from CV")
@@ -229,56 +241,98 @@ class ProfileAnalyzer:
 
     def _analyze_education(self):
         """Analyze education background"""
-        education_data = self.profile_data.get('linkedin', {}).get('education', [])
+        education_data = self._safe_get(self.profile_data, 'linkedin', 'education', default=[])
+        if not education_data:
+            return {
+                'degrees': [],
+                'institutions': [],
+                'fields_of_study': []
+            }
+            
         return {
-            'degrees': [edu.get('degree') for edu in education_data if edu.get('degree')],
-            'institutions': [edu.get('school') for edu in education_data if edu.get('school')],
-            'fields': [edu.get('field') for edu in education_data if edu.get('field')]
+            'degrees': [self._safe_get(edu, 'degree', default='') for edu in education_data],
+            'institutions': [self._safe_get(edu, 'school', default='') for edu in education_data],
+            'fields_of_study': [self._safe_get(edu, 'field_of_study', default='') for edu in education_data]
         }
 
     def _analyze_certifications(self):
         """Analyze professional certifications"""
-        cert_data = self.profile_data.get('linkedin', {}).get('certifications', {}).get('certifications', [])
+        cert_data = self._safe_get(self.profile_data, 'linkedin', 'certifications', 'certifications', default=[])
+        if not cert_data:
+            return {
+                'certifications': [],
+                'authorities': [],
+                'total_count': 0
+            }
         
         # Extract unique certification names and authorities
         certifications = []
-        authorities = set()
-        
         for cert in cert_data:
-            if isinstance(cert, dict):
-                if cert.get('name'):
-                    certifications.append(cert['name'])
-                if cert.get('authority'):
-                    authorities.add(cert['authority'])
+            cert_info = {
+                'name': self._safe_get(cert, 'name', default=''),
+                'authority': self._safe_get(cert, 'authority', default=''),
+                'date': self._safe_get(cert, 'date', default='')
+            }
+            if cert_info['name']:  # Only add if name exists
+                certifications.append(cert_info)
+        
+        # Get unique authorities
+        authorities = list(set(cert['authority'] for cert in certifications if cert['authority']))
         
         return {
             'certifications': certifications,
-            'authorities': list(authorities),
-            'total_certifications': len(certifications)
+            'authorities': authorities,
+            'total_count': len(certifications)
         }
 
     def _analyze_endorsements(self):
         """Analyze LinkedIn endorsements"""
-        endorsements = self.profile_data.get('linkedin', {}).get('endorsements', {})
+        endorsements = self._safe_get(self.profile_data, 'linkedin', 'endorsements', default={})
+        if not endorsements:
+            return {
+                'top_skills': [],
+                'total_endorsements': 0,
+                'skill_categories': {}
+            }
         
         try:
             # Sort endorsements by count
-            top_endorsed_skills = sorted(
+            sorted_skills = sorted(
                 endorsements.items(),
-                key=lambda x: x[1]['count'],  # Sort by the count of endorsements
+                key=lambda x: int(x[1]) if isinstance(x[1], (int, str)) else 0,
                 reverse=True
-            )[:10]
+            )
+            
+            # Get top skills (top 10)
+            top_skills = [(skill, count) for skill, count in sorted_skills[:10]]
+            
+            # Categorize skills
+            skill_categories = {
+                'technical': [],
+                'soft': [],
+                'industry': [],
+                'other': []
+            }
+            
+            for skill, count in sorted_skills:
+                category = self._categorize_skill(skill)
+                skill_categories[category].append((skill, count))
             
             return {
-                'top_endorsed_skills': top_endorsed_skills
+                'top_skills': top_skills,
+                'total_endorsements': sum(int(count) if isinstance(count, (int, str)) else 0 
+                                       for _, count in sorted_skills),
+                'skill_categories': skill_categories
             }
             
         except Exception as e:
             print(f"Error analyzing endorsements: {str(e)}")
-            traceback.print_exc()
-            return {}
+            return {
+                'top_skills': [],
+                'total_endorsements': 0,
+                'skill_categories': {}
+            }
 
-    # Helper methods
     def _determine_seniority(self, roles):
         """Determine seniority level based on roles"""
         leadership_keywords = ['head', 'director', 'lead', 'manager', 'chief', 'principal']
@@ -474,24 +528,24 @@ class ProfileAnalyzer:
 
     def _extract_technical_skills(self, profile_data):
         """Extract technical skills from profile data"""
-        skills_data = profile_data.get('skills', {})
+        skills_data = self._safe_get(profile_data, 'skills', default={})
         if not skills_data:
             return []
         
-        return skills_data.get('technical', [])
+        return self._safe_get(skills_data, 'technical', default=[])
 
     def _extract_soft_skills(self, profile_data):
         """Extract soft skills from profile data"""
-        skills_data = profile_data.get('skills', {})
+        skills_data = self._safe_get(profile_data, 'skills', default={})
         if not skills_data:
             return []
         
-        return skills_data.get('soft', [])
+        return self._safe_get(skills_data, 'soft', default=[])
 
     def _extract_linkedin_skills(self, linkedin_data: Dict[str, Any]) -> List[str]:
         """Extract skills from LinkedIn experience descriptions"""
         skills = set()
-        for exp in linkedin_data.get('experiences', []):
+        for exp in self._safe_get(linkedin_data, 'experiences', default=[]):
             description = exp.get('description', '')
             role = exp.get('title', '')
             # Use _extract_skills_from_cv instead of non-existent _extract_skills_from_text
@@ -507,7 +561,7 @@ class ProfileAnalyzer:
         
         topics = []
         if isinstance(medium_data, dict):
-            topics.extend(medium_data.get('topics', []))
+            topics.extend(self._safe_get(medium_data, 'topics', default=[]))
         
         return topics
 

@@ -10,6 +10,7 @@ from langchain_openai import OpenAI
 from typing import Dict, Any
 import pandas as pd
 import os
+from utils.file_cache import FileCache
 
 class ProfileParser:
     def __init__(self, cv_path=None, cv_long_path=None, cv_more_path=None,
@@ -31,6 +32,67 @@ class ProfileParser:
         self.linkedin_endorsements_path = linkedin_endorsements_path
         self.linkedin_articles_path = linkedin_articles_path
         self.medium_path = medium_path
+        
+        # Initialize file cache
+        self.file_cache = FileCache()
+
+    def _get_file_paths(self):
+        """Get dictionary of all file paths"""
+        paths = {}
+        
+        # Helper to add path if it exists
+        def add_path(key, path):
+            if path and os.path.exists(path):
+                paths[key] = path
+        
+        # Add all paths that exist
+        add_path('cv', self.cv_path)
+        add_path('cv_long', self.cv_long_path)
+        add_path('cv_more', self.cv_more_path)
+        add_path('skills', self.skills_path)
+        add_path('linkedin_posts', self.linkedin_posts_path)
+        add_path('linkedin_exp', self.linkedin_exp_path)
+        add_path('linkedin_positions', self.linkedin_positions_path)
+        add_path('linkedin_profile', self.linkedin_profile_path)
+        add_path('linkedin_certifications', self.linkedin_certifications_path)
+        add_path('linkedin_education', self.linkedin_education_path)
+        add_path('linkedin_endorsements', self.linkedin_endorsements_path)
+        add_path('linkedin_articles', self.linkedin_articles_path)
+        add_path('medium', self.medium_path)
+        
+        return paths
+
+    def parse_profile_data(self):
+        """Parse all profile data with caching"""
+        file_paths = self._get_file_paths()
+        
+        if not file_paths:
+            print("No valid profile files found")
+            return None
+            
+        # Try to get cached data first
+        cached_data = self.file_cache.get_cached_profile(file_paths)
+        if cached_data is not None:
+            print("Using cached profile data")
+            return cached_data
+            
+        # If no cache hit, parse everything
+        print("Parsing profile data...")
+        parsed_data = {
+            'cv': self.parse_cv(),
+            'skills': self.parse_skills(),
+            'linkedin': self.parse_linkedin_data(),
+            'medium': self.parse_medium_profile()
+        }
+        
+        # Remove None values
+        parsed_data = {k: v for k, v in parsed_data.items() if v is not None}
+        
+        if parsed_data:
+            # Cache the parsed data
+            self.file_cache.cache_profile(file_paths, parsed_data)
+        
+        return parsed_data
 
     def _normalize_list(self, items):
         """Normalize list items to remove duplicates and standardize case"""

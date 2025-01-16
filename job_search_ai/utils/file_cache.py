@@ -30,12 +30,35 @@ class FileCache:
             json.dump(self.metadata, f, indent=2)
     
     def _get_file_hash(self, file_path):
-        """Generate hash for a file"""
+        """Generate hash for a file or directory"""
+        if not file_path:
+            return None
+            
+        path = Path(file_path)
+        if not path.exists():
+            return None
+            
         sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            # Read the file in chunks to handle large files
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
+        
+        if path.is_file():
+            with open(file_path, "rb") as f:
+                # Read the file in chunks to handle large files
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(byte_block)
+        elif path.is_dir():
+            # For directories, hash the names and modification times of all files
+            for subpath in sorted(path.rglob('*')):
+                if subpath.is_file():
+                    # Update hash with file path and mtime
+                    rel_path = str(subpath.relative_to(path))
+                    mtime = str(subpath.stat().st_mtime)
+                    sha256_hash.update(f"{rel_path}:{mtime}".encode())
+                    
+                    # Also include file contents in hash
+                    with open(subpath, "rb") as f:
+                        for byte_block in iter(lambda: f.read(4096), b""):
+                            sha256_hash.update(byte_block)
+                            
         return sha256_hash.hexdigest()
     
     def _get_cache_path(self, file_hash, file_type):
