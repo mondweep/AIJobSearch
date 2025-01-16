@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Job Search{% endblock %}
+
+{% block head %}
+<style>
+    .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Search Jobs</h1>
+    
+    <!-- Search Form -->
+    <form id="searchForm" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <!-- Positions -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Positions</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {% for position in config.positions %}
+                <label class="inline-flex items-center">
+                    <input type="checkbox" name="positions[]" value="{{ position }}" class="form-checkbox">
+                    <span class="ml-2">{{ position }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Locations -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Locations</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {% for location in config.locations %}
+                <label class="inline-flex items-center">
+                    <input type="checkbox" name="locations[]" value="{{ location }}" class="form-checkbox">
+                    <span class="ml-2">{{ location }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Contract Types -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Contract Types</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {% for type in config.contract_types %}
+                <label class="inline-flex items-center">
+                    <input type="checkbox" name="contract_types[]" value="{{ type }}" class="form-checkbox">
+                    <span class="ml-2">{{ type }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Salary Range -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Salary Range</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="min_salary">
+                        Minimum Salary
+                    </label>
+                    <input type="number" name="min_salary" id="min_salary" 
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           placeholder="Min Salary">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="max_salary">
+                        Maximum Salary
+                    </label>
+                    <input type="number" name="max_salary" id="max_salary" 
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           placeholder="Max Salary">
+                </div>
+            </div>
+            <div class="mt-2">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="salary_currency">
+                    Currency
+                </label>
+                <select name="salary_currency" id="salary_currency" 
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <option value="GBP">GBP (£)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Keywords -->
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="keywords">
+                Keywords (comma-separated)
+            </label>
+            <input type="text" name="keywords" id="keywords" 
+                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                   placeholder="python, machine learning, remote">
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex items-center justify-between">
+            <button type="submit" 
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Search Jobs
+            </button>
+        </div>
+    </form>
+
+    <!-- Loading Spinner -->
+    <div id="searchSpinner" class="loading-spinner" style="display: none;"></div>
+    
+    <!-- Status Message -->
+    <div id="searchMessage" class="text-center text-gray-600 my-4"></div>
+    
+    <!-- Results Container -->
+    <div id="searchResults" class="mt-8"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+{% endblock %}

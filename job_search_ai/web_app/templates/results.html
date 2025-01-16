@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - AI Job Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        }
+        .job-card {
+            transition: transform 0.2s;
+        }
+        .job-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-xl font-bold">AI Job Search</a>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="/" class="text-white hover:text-gray-200">Home</a>
+                    <a href="/profile" class="text-white hover:text-gray-200">Profile</a>
+                    <a href="/search" class="text-white hover:text-gray-200">Search</a>
+                    <a href="/results" class="text-white hover:text-gray-200">Results</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Search Summary -->
+        <div class="bg-white shadow sm:rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Search Summary</h3>
+                <div class="mt-2 max-w-xl text-sm text-gray-500">
+                    <p id="searchSummary">Loading search criteria...</p>
+                </div>
+                <div class="mt-3 text-sm">
+                    <a href="/search" class="font-medium text-indigo-600 hover:text-indigo-500">
+                        Modify Search <span aria-hidden="true">&rarr;</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Results -->
+        <div class="lg:grid lg:grid-cols-12 lg:gap-x-5">
+            <!-- Filters Sidebar -->
+            <aside class="py-6 px-2 sm:px-6 lg:py-0 lg:px-0 lg:col-span-3">
+                <div class="space-y-6">
+                    <!-- Match Score Filter -->
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Match Score
+                        </h3>
+                        <div class="mt-2">
+                            <input type="range" id="matchScoreFilter" min="0" max="100" value="70" class="w-full">
+                            <div class="text-sm text-gray-500">Minimum: <span id="matchScoreValue">70</span>%</div>
+                        </div>
+                    </div>
+
+                    <!-- Location Filter -->
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Location
+                        </h3>
+                        <div class="mt-2 space-y-2" id="locationFilters">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <!-- Employment Type Filter -->
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Employment Type
+                        </h3>
+                        <div class="mt-2 space-y-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="permanent">
+                                <span class="ml-2">Permanent</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="contract">
+                                <span class="ml-2">Contract</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox" value="remote">
+                                <span class="ml-2">Remote</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Salary Range Filter -->
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Salary Range
+                        </h3>
+                        <div class="mt-2 space-y-2">
+                            <input type="number" placeholder="Min Salary" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <input type="number" placeholder="Max Salary" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Results -->
+            <div class="space-y-6 sm:px-6 lg:px-0 lg:col-span-9">
+                <!-- Sort Options -->
+                <div class="flex justify-between items-center">
+                    <div class="flex-1">
+                        <select id="sortOptions" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                            <option value="match">Match Score</option>
+                            <option value="salary">Salary</option>
+                            <option value="date">Date Posted</option>
+                        </select>
+                    </div>
+                    <div class="ml-4">
+                        <span class="text-sm text-gray-700" id="resultCount">
+                            Loading results...
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Job Results -->
+                <div class="space-y-4" id="jobResults">
+                    <!-- Job cards will be dynamically inserted here -->
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="flex justify-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Details Modal -->
+    <div id="jobModal" class="fixed inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div id="jobModalContent">
+                        <!-- Job details will be dynamically inserted here -->
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="closeJobModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to format salary
+        function formatSalary(amount, currency = '£') {
+            return `${currency}${amount.toLocaleString()}`;
+        }
+
+        // Function to create a job card
+        function createJobCard(job) {
+            console.log('Creating card for job:', job);
+            try {
+                const matchScore = parseFloat(job.matchScore || 0) * 100; // Convert to percentage
+                const salaryMin = job.salaryMin ? formatSalary(job.salaryMin) : 'N/A';
+                const salaryMax = job.salaryMax ? formatSalary(job.salaryMax) : 'N/A';
+                const salaryDisplay = salaryMin === 'N/A' && salaryMax === 'N/A' ? 'Salary not specified' :
+                                    salaryMin === salaryMax ? salaryMin : `${salaryMin} - ${salaryMax}`;
+                
+                return `
+                    <div class="bg-white shadow rounded-lg p-6 job-card cursor-pointer hover:shadow-lg" onclick="showJobDetails('${job.id || ''}')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">${job.title || 'Untitled Position'}</h3>
+                                <p class="text-sm text-gray-500">${job.company || 'Company Not Specified'}</p>
+                            </div>
+                            <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
+                                matchScore >= 80 ? 'bg-green-100 text-green-800' :
+                                matchScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                            }">
+                                ${matchScore.toFixed(0)}% Match
+                            </span>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                                ${job.location || 'Location Not Specified'}
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                                ${salaryDisplay}
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                ${job.employmentType || 'Employment Type Not Specified'}
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600 line-clamp-2">
+                                ${job.description ? job.description.substring(0, 150) + '...' : 'No description available'}
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center">
+                            <span class="text-sm text-gray-500">${job.postedDate || 'Posted date not available'}</span>
+                            <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                View Details →
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error creating job card:', error, job);
+                return `
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <p class="text-red-500">Error displaying job</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Function to update search summary
+        function updateSearchSummary(criteria) {
+            const summary = [];
+            
+            if (criteria.positions && criteria.positions.length) {
+                summary.push(`Looking for: ${criteria.positions.join(', ')}`);
+            }
+            
+            if (criteria.locations && criteria.locations.length) {
+                summary.push(`Locations: ${criteria.locations.join(', ')}`);
+            }
+            
+            if (criteria.salary && (criteria.salary.min || criteria.salary.max)) {
+                const salaryRange = [];
+                if (criteria.salary.min) salaryRange.push(`min ${formatSalary(criteria.salary.min)}`);
+                if (criteria.salary.max) salaryRange.push(`max ${formatSalary(criteria.salary.max)}`);
+                summary.push(`Salary: ${salaryRange.join(' - ')}`);
+            }
+            
+            if (criteria.experienceLevel) {
+                summary.push(`Experience: ${criteria.experienceLevel}`);
+            }
+            
+            document.getElementById('searchSummary').textContent = summary.join(' • ');
+        }
+
+        // Function to load and display results
+        async function loadResults() {
+            try {
+                const response = await fetch('/api/results');
+                const data = await response.json();
+                console.log('Received data:', data);
+                
+                document.getElementById('loadingState').style.display = 'none';
+                const resultsContainer = document.getElementById('jobResults');
+                
+                if (!data.results || data.results.length === 0) {
+                    console.log('No results found');
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-12">
+                            <p class="text-gray-500">No job matches found. Try adjusting your search criteria.</p>
+                            <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                Start New Search
+                            </a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log('Creating job cards for results:', data.results);
+                const jobCards = data.results.map(job => {
+                    console.log('Creating card for job:', job);
+                    return createJobCard(job);
+                });
+                resultsContainer.innerHTML = jobCards.join('');
+                document.getElementById('resultCount').textContent = `${data.results.length} results found`;
+                
+                // Update location filters
+                const locations = [...new Set(data.results.map(job => job.location).filter(Boolean))];
+                console.log('Updating location filters:', locations);
+                document.getElementById('locationFilters').innerHTML = locations.map(location => `
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" class="form-checkbox" value="${location}">
+                        <span class="ml-2">${location}</span>
+                    </label>
+                `).join('');
+                
+                // Update search summary
+                if (data.searchCriteria) {
+                    console.log('Updating search summary:', data.searchCriteria);
+                    updateSearchSummary(data.searchCriteria);
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+                document.getElementById('jobResults').innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-red-500">Error loading results. Please try again.</p>
+                        <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                            Start New Search
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        // Show job details modal
+        async function showJobDetails(jobId) {
+            try {
+                const response = await fetch(`/api/job/${jobId}`);
+                const job = await response.json();
+                
+                const modalContent = document.getElementById('jobModalContent');
+                modalContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">${job.title || 'Untitled Position'}</h3>
+                            <p class="text-sm text-gray-500">${job.company || 'Company Not Specified'}</p>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
+                                job.matchScore >= 0.8 ? 'bg-green-100 text-green-800' :
+                                job.matchScore >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                            }">
+                                ${(job.matchScore * 100).toFixed(0)}% Match
+                            </span>
+                            <span class="text-sm text-gray-500">${job.postedDate || 'Posted date not available'}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                </svg>
+                                ${job.location || 'Location Not Specified'}
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                ${job.employmentType || 'Employment Type Not Specified'}
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-gray-200 pt-4">
+                            <h4 class="text-sm font-medium text-gray-900">Salary</h4>
+                            <p class="mt-1 text-sm text-gray-500">${
+                                job.salaryMin || job.salaryMax ?
+                                `${formatSalary(job.salaryMin)} - ${formatSalary(job.salaryMax)}` :
+                                'Salary not specified'
+                            }</p>
+                        </div>
+                        
+                        <div class="border-t border-gray-200 pt-4">
+                            <h4 class="text-sm font-medium text-gray-900">Job Description</h4>
+                            <div class="mt-1 text-sm text-gray-500 whitespace-pre-wrap">
+                                ${job.description || 'No description available'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('jobModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading job details:', error);
+                const modalContent = document.getElementById('jobModalContent');
+                modalContent.innerHTML = `
+                    <div class="text-center py-4">
+                        <p class="text-red-500">Error loading job details. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Close job details modal
+        function closeJobModal() {
+            document.getElementById('jobModal').classList.add('hidden');
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadResults();
+            
+            // Update match score filter value
+            document.getElementById('matchScoreFilter').addEventListener('input', (e) => {
+                document.getElementById('matchScoreValue').textContent = e.target.value;
+            });
+            
+            // Handle sort changes
+            document.getElementById('sortOptions').addEventListener('change', loadResults);
+        });
+    </script>
+</body>
+</html>
