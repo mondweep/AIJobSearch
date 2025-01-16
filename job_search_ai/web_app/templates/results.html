@@ -173,18 +173,18 @@
         function createJobCard(job) {
             console.log('Creating card for job:', job);
             try {
-                const matchScore = parseFloat(job.matchScore || 0) * 100; // Convert to percentage
-                const salaryMin = job.salaryMin ? formatSalary(job.salaryMin) : 'N/A';
-                const salaryMax = job.salaryMax ? formatSalary(job.salaryMax) : 'N/A';
-                const salaryDisplay = salaryMin === 'N/A' && salaryMax === 'N/A' ? 'Salary not specified' :
-                                    salaryMin === salaryMax ? salaryMin : `${salaryMin} - ${salaryMax}`;
+                const matchScore = job.match_score * 100; // Convert to percentage
+                const title = job.position ? job.position.replace(/^\*\*\s*/, '') : 'Untitled Position';
+                const company = job.company ? job.company.replace(/^\*\*\s*/, '') : 'Company Not Specified';
+                const location = job.location ? job.location.replace(/^\*\*\s*/, '') : 'Location Not Specified';
+                const salary = job.salary ? job.salary.replace(/^\*\*\s*/, '') : 'Salary not specified';
                 
                 return `
-                    <div class="bg-white shadow rounded-lg p-6 job-card cursor-pointer hover:shadow-lg" onclick="showJobDetails('${job.id || ''}')">
+                    <div class="bg-white shadow rounded-lg p-6 job-card cursor-pointer hover:shadow-lg" onclick="showJobDetails(${JSON.stringify(job).replace(/"/g, '&quot;')})">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h3 class="text-lg font-medium text-gray-900">${job.title || 'Untitled Position'}</h3>
-                                <p class="text-sm text-gray-500">${job.company || 'Company Not Specified'}</p>
+                                <h3 class="text-lg font-medium text-gray-900">${title}</h3>
+                                <p class="text-sm text-gray-500">${company}</p>
                             </div>
                             <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
                                 matchScore >= 80 ? 'bg-green-100 text-green-800' :
@@ -199,26 +199,19 @@
                                 <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                 </svg>
-                                ${job.location || 'Location Not Specified'}
+                                ${location}
                             </div>
                             <div class="flex items-center text-sm text-gray-500">
                                 <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
                                 </svg>
-                                ${salaryDisplay}
-                            </div>
-                            <div class="flex items-center text-sm text-gray-500">
-                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
-                                </svg>
-                                ${job.employmentType || 'Employment Type Not Specified'}
+                                ${salary}
                             </div>
                             <div class="mt-2 text-sm text-gray-600 line-clamp-2">
-                                ${job.description ? job.description.substring(0, 150) + '...' : 'No description available'}
+                                ${job.description ? job.description.replace(/^\*\*\s*/, '') : 'No description available'}
                             </div>
                         </div>
                         <div class="mt-4 flex justify-between items-center">
-                            <span class="text-sm text-gray-500">${job.postedDate || 'Posted date not available'}</span>
                             <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
                                 View Details →
                             </button>
@@ -233,6 +226,153 @@
                     </div>
                 `;
             }
+        }
+
+        // Function to load and display results
+        async function loadResults() {
+            const loadingState = document.getElementById('loadingState');
+            const resultsContainer = document.getElementById('jobResults');
+            
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session_id');
+                
+                if (!sessionId) {
+                    throw new Error('No session ID found');
+                }
+                
+                // Show loading state
+                if (loadingState) loadingState.style.display = 'block';
+                if (resultsContainer) resultsContainer.style.display = 'none';
+                
+                const response = await fetch(`/api/results?session_id=${sessionId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Received data:', data);
+                
+                // Hide loading state
+                if (loadingState) loadingState.style.display = 'none';
+                if (resultsContainer) resultsContainer.style.display = 'block';
+                
+                if (!data.results || !data.results.jobs || data.results.jobs.length === 0) {
+                    console.log('No results found');
+                    if (resultsContainer) {
+                        resultsContainer.innerHTML = `
+                            <div class="text-center py-12">
+                                <p class="text-gray-500">No job matches found. Try adjusting your search criteria.</p>
+                                <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                    Start New Search
+                                </a>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+                
+                // Create job cards
+                const jobCards = data.results.jobs.map(job => createJobCard(job)).join('');
+                
+                // Update the results container
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = jobCards;
+                }
+                
+                // Update result count if element exists
+                const resultCount = document.getElementById('resultCount');
+                if (resultCount) {
+                    resultCount.textContent = `${data.results.jobs.length} results found`;
+                }
+                
+                // Update search summary if available
+                if (data.searchCriteria) {
+                    updateSearchSummary(data.searchCriteria);
+                }
+                
+            } catch (error) {
+                console.error('Error loading results:', error);
+                
+                if (loadingState) loadingState.style.display = 'none';
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-12">
+                            <p class="text-red-500">Error loading results: ${error.message}</p>
+                            <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                                Start New Search
+                            </a>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Function to show job details in modal
+        function showJobDetails(job) {
+            const modalContent = document.getElementById('jobModalContent');
+            if (!modalContent) return;
+            
+            const title = job.position ? job.position.replace(/^\*\*\s*/, '') : 'Untitled Position';
+            const company = job.company ? job.company.replace(/^\*\*\s*/, '') : 'Company Not Specified';
+            const location = job.location ? job.location.replace(/^\*\*\s*/, '') : 'Location Not Specified';
+            const salary = job.salary ? job.salary.replace(/^\*\*\s*/, '') : 'Salary not specified';
+            const matchScore = job.match_score * 100;
+            
+            modalContent.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">${title}</h3>
+                        <p class="text-sm text-gray-500">${company}</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
+                            matchScore >= 80 ? 'bg-green-100 text-green-800' :
+                            matchScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }">
+                            ${matchScore.toFixed(0)}% Match
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Location</p>
+                            <p class="text-sm font-medium text-gray-900">${location}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Salary Range</p>
+                            <p class="text-sm font-medium text-gray-900">${salary}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="text-sm font-medium text-gray-900">Key Skills</h4>
+                        <p class="mt-1 text-sm text-gray-500">${job.key_skills || 'Not specified'}</p>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="text-sm font-medium text-gray-900">Required Experience</h4>
+                        <p class="mt-1 text-sm text-gray-500">${job.required_experience || 'Not specified'}</p>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="text-sm font-medium text-gray-900">Job Description</h4>
+                        <div class="mt-1 text-sm text-gray-500 whitespace-pre-wrap">
+                            ${job.description ? job.description.replace(/^\*\*\s*/, '') : 'No description available'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Show the modal
+            document.getElementById('jobModal').classList.remove('hidden');
+        }
+
+        // Function to close job modal
+        function closeJobModal() {
+            document.getElementById('jobModal').classList.add('hidden');
         }
 
         // Function to update search summary
@@ -261,89 +401,24 @@
             document.getElementById('searchSummary').textContent = summary.join(' • ');
         }
 
-        // Function to load and display results
-        async function loadResults() {
-            const loadingState = document.getElementById('loadingState');
-            const resultsContainer = document.getElementById('jobResults');
-            
-            try {
-                // Get session ID from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const sessionId = urlParams.get('session_id');
-                
-                if (!sessionId) {
-                    throw new Error('No session ID found');
-                }
-                
-                // Show loading state
-                loadingState.style.display = 'block';
-                resultsContainer.style.display = 'none';
-                
-                const response = await fetch(`/api/results?session_id=${sessionId}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('Received data:', data);
-                
-                // Hide loading state
-                loadingState.style.display = 'none';
-                resultsContainer.style.display = 'block';
-                
-                if (!data.results || !data.results.jobs || data.results.jobs.length === 0) {
-                    console.log('No results found');
-                    resultsContainer.innerHTML = `
-                        <div class="text-center py-12">
-                            <p class="text-gray-500">No job matches found. Try adjusting your search criteria.</p>
-                            <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-                                Start New Search
-                            </a>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Create job cards
-                const jobCards = data.results.jobs.map(job => {
-                    return createJobCard(job);
-                }).join('');
-                
-                // Update the results container
-                resultsContainer.innerHTML = jobCards;
-                document.getElementById('resultCount').textContent = `${data.results.jobs.length} results found`;
-                
-                // Update search summary if available
-                if (data.results.search_criteria) {
-                    updateSearchSummary(data.results.search_criteria);
-                }
-                
-            } catch (error) {
-                console.error('Error loading results:', error);
-                
-                loadingState.style.display = 'none';
-                resultsContainer.innerHTML = `
-                    <div class="text-center py-12">
-                        <p class="text-red-500">Error loading results: ${error.message}</p>
-                        <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-                            Start New Search
-                        </a>
-                    </div>
-                `;
-            }
-        }
-
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             loadResults();
             
             // Update match score filter value
-            document.getElementById('matchScoreFilter').addEventListener('input', (e) => {
-                document.getElementById('matchScoreValue').textContent = e.target.value;
-            });
+            const matchScoreFilter = document.getElementById('matchScoreFilter');
+            const matchScoreValue = document.getElementById('matchScoreValue');
+            if (matchScoreFilter && matchScoreValue) {
+                matchScoreFilter.addEventListener('input', (e) => {
+                    matchScoreValue.textContent = e.target.value;
+                });
+            }
             
             // Handle sort changes
-            document.getElementById('sortOptions').addEventListener('change', loadResults);
+            const sortOptions = document.getElementById('sortOptions');
+            if (sortOptions) {
+                sortOptions.addEventListener('change', loadResults);
+            }
         });
     </script>
 </body>

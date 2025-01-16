@@ -282,7 +282,13 @@ def process_job_search(session_id, profile_files, preferences):
                 if key == 'salary_range':
                     current_job['salary'] = value
                 elif key == 'profile_match_score':
-                    current_job['match_score'] = float(value)
+                    # Clean up the value and convert to float
+                    value = value.strip('* ')
+                    try:
+                        current_job['match_score'] = float(value)
+                    except ValueError:
+                        print(f"Warning: Could not parse match score: {value}")
+                        current_job['match_score'] = 0.0
                 else:
                     current_job[key] = value
         
