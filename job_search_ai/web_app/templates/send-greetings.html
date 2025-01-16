@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Send Greetings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .greeting-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        textarea {
+            padding: 10px;
+            min-height: 100px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="greeting-form">
+        <h2>Send Your Greetings to the World!</h2>
+        <textarea id="greetingText" placeholder="Type your greeting here..."></textarea>
+        <button onclick="sendGreeting()">Send Greetings!</button>
+    </div>
+
+    <script>
+        let pollInterval;
+        
+        async function sendGreeting() {
+            const greeting = document.getElementById('greetingText').value;
+            
+            try {
+                const response = await fetch('/api/send-greeting', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ greeting: greeting })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.session_id) {
+                        // Redirect to relay page with session ID
+                        window.location.href = `/relay-greetings?session_id=${data.session_id}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

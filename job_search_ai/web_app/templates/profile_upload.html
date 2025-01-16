@@ -45,27 +45,27 @@
                     </div>
                     
                     <!-- Upload Form -->
-                    <form id="uploadForm" class="mt-5 space-y-6">
+                    <form id="uploadForm" class="mt-5 space-y-6" enctype="multipart/form-data">
                         <!-- CV Upload -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">CV/Resume (PDF)</label>
                             <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                                 <div class="space-y-1 text-center">
                                     <div class="flex text-sm text-gray-600">
-                                        <label for="cv" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                        <label for="cv-file" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                                             <span>Upload a file</span>
-                                            <input id="cv" name="cv" type="file" class="sr-only" accept=".pdf" onchange="updateFilePreview(this, 'cvPreview')">
+                                            <input id="cv-file" name="cv_file" type="file" class="sr-only" accept=".pdf,.doc,.docx" required>
                                         </label>
                                         <p class="pl-1">or drag and drop</p>
                                     </div>
-                                    <p class="text-xs text-gray-500">PDF up to 10MB</p>
+                                    <p class="text-xs text-gray-500">PDF, DOC, or DOCX up to 10MB</p>
                                     <div id="cvPreview" class="hidden mt-2">
                                         <div class="flex items-center space-x-2">
                                             <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
-                                            <span class="text-sm text-gray-600"></span>
-                                            <button type="button" onclick="removeFile('cv')" class="text-sm text-red-500 hover:text-red-700">Remove</button>
+                                            <span class="text-sm text-gray-600 filename"></span>
+                                            <button type="button" onclick="removeFile('cv-file')" class="text-sm text-red-500 hover:text-red-700">Remove</button>
                                         </div>
                                     </div>
                                 </div>
@@ -78,9 +78,9 @@
                             <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                                 <div class="space-y-1 text-center">
                                     <div class="flex text-sm text-gray-600">
-                                        <label for="linkedin" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                        <label for="linkedin-file" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                                             <span>Upload LinkedIn data</span>
-                                            <input id="linkedin" name="linkedin" type="file" class="sr-only" accept=".zip,.json" onchange="updateFilePreview(this, 'linkedinPreview')">
+                                            <input id="linkedin-file" name="linkedin_file" type="file" class="sr-only" accept=".zip,.json" required>
                                         </label>
                                         <p class="pl-1">or drag and drop</p>
                                     </div>
@@ -90,17 +90,16 @@
                                             <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
-                                            <span class="text-sm text-gray-600"></span>
-                                            <button type="button" onclick="removeFile('linkedin')" class="text-sm text-red-500 hover:text-red-700">Remove</button>
+                                            <span class="text-sm text-gray-600 filename"></span>
+                                            <button type="button" onclick="removeFile('linkedin-file')" class="text-sm text-red-500 hover:text-red-700">Remove</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Upload Button -->
-                        <div class="flex justify-end">
-                            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white gradient-bg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <div class="mt-5">
+                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                 Upload Profile
                             </button>
                         </div>
@@ -109,16 +108,10 @@
                     <!-- Progress and Status -->
                     <div id="uploadStatus" class="mt-6 hidden">
                         <div class="relative pt-1">
-                            <div class="flex mb-2 items-center justify-between">
-                                <div>
-                                    <span id="statusText" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200">
-                                        Processing...
-                                    </span>
-                                </div>
-                            </div>
                             <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-200">
-                                <div id="progressBar" class="upload-progress shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center gradient-bg" style="width: 0%"></div>
+                                <div id="uploadProgress" class="upload-progress shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500" style="width: 0%"></div>
                             </div>
+                            <p id="statusMessage" class="text-sm text-gray-600"></p>
                         </div>
                     </div>
                 </div>
@@ -127,89 +120,80 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('uploadForm');
-            const statusDiv = document.getElementById('uploadStatus');
-            const progressBar = document.getElementById('progressBar');
-            const statusText = document.getElementById('statusText');
-
-            // File preview functions
-            window.updateFilePreview = function(input, previewId) {
-                const preview = document.getElementById(previewId);
-                const span = preview.querySelector('span');
-                if (input.files && input.files[0]) {
-                    preview.classList.remove('hidden');
-                    span.textContent = input.files[0].name;
-                } else {
-                    preview.classList.add('hidden');
-                    span.textContent = '';
-                }
-            };
-
-            window.removeFile = function(inputId) {
-                const input = document.getElementById(inputId);
-                const preview = document.getElementById(inputId + 'Preview');
-                input.value = '';
+        function updateFilePreview(input) {
+            const fileId = input.id;
+            const previewId = fileId === 'cv-file' ? 'cvPreview' : 'linkedinPreview';
+            const preview = document.getElementById(previewId);
+            const filename = preview.querySelector('.filename');
+            
+            if (input.files && input.files[0]) {
+                preview.classList.remove('hidden');
+                filename.textContent = input.files[0].name;
+            } else {
                 preview.classList.add('hidden');
-                preview.querySelector('span').textContent = '';
-            };
+                filename.textContent = '';
+            }
+        }
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = new FormData();
-                
-                // Add CV file
-                const cvFile = document.getElementById('cv').files[0];
-                if (cvFile) {
-                    formData.append('cv', cvFile);
-                }
-                
-                // Add LinkedIn file
-                const linkedinFile = document.getElementById('linkedin').files[0];
-                if (linkedinFile) {
-                    formData.append('linkedin', linkedinFile);
-                }
+        function removeFile(inputId) {
+            const input = document.getElementById(inputId);
+            input.value = '';
+            updateFilePreview(input);
+        }
 
-                if (!cvFile && !linkedinFile) {
-                    statusText.textContent = 'Please upload at least one file';
-                    statusText.classList.remove('text-indigo-600', 'bg-indigo-200');
-                    statusText.classList.add('text-red-600', 'bg-red-200');
-                    statusDiv.classList.remove('hidden');
-                    return;
-                }
+        // Add file change listeners
+        document.getElementById('cv-file').addEventListener('change', function() {
+            updateFilePreview(this);
+        });
+        
+        document.getElementById('linkedin-file').addEventListener('change', function() {
+            updateFilePreview(this);
+        });
+
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const cvFile = document.getElementById('cv-file').files[0];
+            const linkedinFile = document.getElementById('linkedin-file').files[0];
+            
+            if (!cvFile || !linkedinFile) {
+                alert('Please select both CV and LinkedIn data files');
+                return;
+            }
+            
+            formData.append('cv_file', cvFile);
+            formData.append('linkedin_file', linkedinFile);
+            
+            // Show upload status
+            const uploadStatus = document.getElementById('uploadStatus');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const statusMessage = document.getElementById('statusMessage');
+            uploadStatus.classList.remove('hidden');
+            uploadProgress.style.width = '0%';
+            statusMessage.textContent = 'Starting upload...';
+            
+            try {
+                const response = await fetch('/api/upload-profile', {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                // Show status
-                statusDiv.classList.remove('hidden');
-                progressBar.style.width = '0%';
-                statusText.textContent = 'Uploading...';
-                statusText.classList.remove('text-red-600', 'bg-red-200');
-                statusText.classList.add('text-indigo-600', 'bg-indigo-200');
+                const result = await response.json();
                 
-                try {
-                    const response = await fetch('/api/upload-profile', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        progressBar.style.width = '100%';
-                        statusText.textContent = 'Upload Complete';
-                        setTimeout(() => {
-                            window.location.href = '/search';
-                        }, 2000);
-                    } else {
-                        throw new Error(result.message || 'Upload failed');
-                    }
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    statusText.textContent = error.message || 'Upload Failed';
-                    statusText.classList.remove('text-indigo-600', 'bg-indigo-200');
-                    statusText.classList.add('text-red-600', 'bg-red-200');
+                if (response.ok) {
+                    uploadProgress.style.width = '100%';
+                    statusMessage.textContent = 'Upload successful! Redirecting...';
+                    // Redirect to search configuration
+                    window.location.href = `/search-config?session_id=${result.session_id}`;
+                } else {
+                    throw new Error(result.message || 'Upload failed');
                 }
-            });
+            } catch (error) {
+                uploadProgress.style.width = '0%';
+                statusMessage.textContent = `Error: ${error.message}`;
+            }
         });
     </script>
 </body>

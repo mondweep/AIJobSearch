@@ -203,7 +203,7 @@
                             </div>
                             <div class="flex items-center text-sm text-gray-500">
                                 <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                    <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
                                 </svg>
                                 ${salaryDisplay}
                             </div>
@@ -263,15 +263,35 @@
 
         // Function to load and display results
         async function loadResults() {
+            const loadingState = document.getElementById('loadingState');
+            const resultsContainer = document.getElementById('jobResults');
+            
             try {
-                const response = await fetch('/api/results');
+                // Get session ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session_id');
+                
+                if (!sessionId) {
+                    throw new Error('No session ID found');
+                }
+                
+                // Show loading state
+                loadingState.style.display = 'block';
+                resultsContainer.style.display = 'none';
+                
+                const response = await fetch(`/api/results?session_id=${sessionId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 console.log('Received data:', data);
                 
-                document.getElementById('loadingState').style.display = 'none';
-                const resultsContainer = document.getElementById('jobResults');
+                // Hide loading state
+                loadingState.style.display = 'none';
+                resultsContainer.style.display = 'block';
                 
-                if (!data.results || data.results.length === 0) {
+                if (!data.results || !data.results.jobs || data.results.jobs.length === 0) {
                     console.log('No results found');
                     resultsContainer.innerHTML = `
                         <div class="text-center py-12">
@@ -284,115 +304,33 @@
                     return;
                 }
                 
-                console.log('Creating job cards for results:', data.results);
-                const jobCards = data.results.map(job => {
-                    console.log('Creating card for job:', job);
+                // Create job cards
+                const jobCards = data.results.jobs.map(job => {
                     return createJobCard(job);
-                });
-                resultsContainer.innerHTML = jobCards.join('');
-                document.getElementById('resultCount').textContent = `${data.results.length} results found`;
+                }).join('');
                 
-                // Update location filters
-                const locations = [...new Set(data.results.map(job => job.location).filter(Boolean))];
-                console.log('Updating location filters:', locations);
-                document.getElementById('locationFilters').innerHTML = locations.map(location => `
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" class="form-checkbox" value="${location}">
-                        <span class="ml-2">${location}</span>
-                    </label>
-                `).join('');
+                // Update the results container
+                resultsContainer.innerHTML = jobCards;
+                document.getElementById('resultCount').textContent = `${data.results.jobs.length} results found`;
                 
-                // Update search summary
-                if (data.searchCriteria) {
-                    console.log('Updating search summary:', data.searchCriteria);
-                    updateSearchSummary(data.searchCriteria);
+                // Update search summary if available
+                if (data.results.search_criteria) {
+                    updateSearchSummary(data.results.search_criteria);
                 }
+                
             } catch (error) {
                 console.error('Error loading results:', error);
-                document.getElementById('jobResults').innerHTML = `
+                
+                loadingState.style.display = 'none';
+                resultsContainer.innerHTML = `
                     <div class="text-center py-12">
-                        <p class="text-red-500">Error loading results. Please try again.</p>
+                        <p class="text-red-500">Error loading results: ${error.message}</p>
                         <a href="/search" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
                             Start New Search
                         </a>
                     </div>
                 `;
             }
-        }
-
-        // Show job details modal
-        async function showJobDetails(jobId) {
-            try {
-                const response = await fetch(`/api/job/${jobId}`);
-                const job = await response.json();
-                
-                const modalContent = document.getElementById('jobModalContent');
-                modalContent.innerHTML = `
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">${job.title || 'Untitled Position'}</h3>
-                            <p class="text-sm text-gray-500">${job.company || 'Company Not Specified'}</p>
-                        </div>
-                        
-                        <div class="flex items-center space-x-4">
-                            <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
-                                job.matchScore >= 0.8 ? 'bg-green-100 text-green-800' :
-                                job.matchScore >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                            }">
-                                ${(job.matchScore * 100).toFixed(0)}% Match
-                            </span>
-                            <span class="text-sm text-gray-500">${job.postedDate || 'Posted date not available'}</span>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="flex items-center text-sm text-gray-500">
-                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                                </svg>
-                                ${job.location || 'Location Not Specified'}
-                            </div>
-                            <div class="flex items-center text-sm text-gray-500">
-                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
-                                </svg>
-                                ${job.employmentType || 'Employment Type Not Specified'}
-                            </div>
-                        </div>
-                        
-                        <div class="border-t border-gray-200 pt-4">
-                            <h4 class="text-sm font-medium text-gray-900">Salary</h4>
-                            <p class="mt-1 text-sm text-gray-500">${
-                                job.salaryMin || job.salaryMax ?
-                                `${formatSalary(job.salaryMin)} - ${formatSalary(job.salaryMax)}` :
-                                'Salary not specified'
-                            }</p>
-                        </div>
-                        
-                        <div class="border-t border-gray-200 pt-4">
-                            <h4 class="text-sm font-medium text-gray-900">Job Description</h4>
-                            <div class="mt-1 text-sm text-gray-500 whitespace-pre-wrap">
-                                ${job.description || 'No description available'}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('jobModal').classList.remove('hidden');
-            } catch (error) {
-                console.error('Error loading job details:', error);
-                const modalContent = document.getElementById('jobModalContent');
-                modalContent.innerHTML = `
-                    <div class="text-center py-4">
-                        <p class="text-red-500">Error loading job details. Please try again.</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Close job details modal
-        function closeJobModal() {
-            document.getElementById('jobModal').classList.add('hidden');
         }
 
         // Initialize page

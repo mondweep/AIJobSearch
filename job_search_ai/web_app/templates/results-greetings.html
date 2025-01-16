@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Greetings Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .result-message {
+            font-size: 24px;
+            color: #4CAF50;
+            margin: 40px 0;
+            line-height: 1.5;
+        }
+        .back-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .back-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="result-message" id="resultMessage"></div>
+    <a href="/send-greetings" class="back-button">Send More Greetings</a>
+
+    <script>
+        // Get session ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session_id');
+        
+        if (!sessionId) {
+            window.location.href = '/send-greetings';
+        }
+        
+        // Fetch and display the greeting result
+        async function loadResult() {
+            try {
+                const response = await fetch(`/api/greeting-result/${sessionId}`);
+                const data = await response.json();
+                if (data.status === 'success') {
+                    document.getElementById('resultMessage').textContent = data.message;
+                } else {
+                    document.getElementById('resultMessage').textContent = 'Something went wrong. Please try again.';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultMessage').textContent = 'Error loading result. Please try again.';
+            }
+        }
+        
+        loadResult();
+    </script>
+</body>
+</html>
